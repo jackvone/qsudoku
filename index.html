@@ -312,6 +312,8 @@ header {
 .btn:hover { background: transparent; color: var(--ink); }
 .btn.outline { background: transparent; color: var(--ink); }
 .btn.outline:hover { background: var(--ink); color: white; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+#hint-count, #check-count { font-family: 'DM Mono', monospace; font-size: 0.75rem; opacity: 0.6; }
 
 /* SIDEBAR */
 .sidebar {
@@ -580,8 +582,8 @@ footer {
     <div id="sudoku-board"></div>
     <div class="numpad" id="numpad"></div>
     <div class="actions">
-      <button class="btn outline" id="btn-hint">💡 Hint</button>
-      <button class="btn outline" id="btn-validate">✓ Check</button>
+      <button class="btn outline" id="btn-hint">💡 Hint <span id="hint-count">(3)</span></button>
+      <button class="btn outline" id="btn-validate">✓ Check <span id="check-count">(3)</span></button>
       <button class="btn" id="btn-reset">Reset</button>
     </div>
   </div>
@@ -613,12 +615,12 @@ footer {
     <div class="card quote-card" id="quote-card">
       <div class="card-head">
         <span class="card-icon">✦</span>
-        <span class="card-title">Today's Quote</span>
+        <span class="card-title">Daily Quotes</span>
       </div>
       <div class="card-body" id="quote-body">
         <div class="quote-locked">
           <span class="lock-icon">🔒</span>
-          <p>Complete any puzzle to unlock today's quote.</p>
+          <p>Complete a puzzle to unlock its quote.<br>Each difficulty reveals a different one!</p>
         </div>
       </div>
     </div>
@@ -1076,14 +1078,18 @@ function seedFromDate(dateStr, extra = 0) {
 // ═══════════════════════════════════════════════════
 //  QUOTE SYSTEM
 // ═══════════════════════════════════════════════════
-function getTodayQuote() {
+function getTodayQuote(difficulty) {
   const now = new Date();
-  const month = now.getUTCMonth(); // 0-11
-  const day = now.getUTCDate() - 1; // 0-30
+  const month = now.getUTCMonth();
+  const day = now.getUTCDate() - 1;
 
-  const theme = MONTHLY_THEMES[month % MONTHLY_THEMES.length];
+  // Each difficulty gets a different theme + quote offset
+  const diffOffset = { easy: 0, medium: 1, hard: 2 };
+  const offset = diffOffset[difficulty] || 0;
+
+  const theme = MONTHLY_THEMES[(month + offset) % MONTHLY_THEMES.length];
   const quotes = theme.quotes;
-  const quote = quotes[day % quotes.length];
+  const quote = quotes[(day + offset * 11) % quotes.length];
 
   return { theme: theme.theme, ...quote };
 }
@@ -1224,6 +1230,7 @@ let state = {
   timer: 0,
   timerInterval: null,
   hintsUsed: 0,
+  checksUsed: 0,
   completed: { easy: false, medium: false, hard: false },
   quoteUnlocked: false,
 };
@@ -1367,7 +1374,7 @@ function showWinModal() {
   document.getElementById('win-time').textContent = formatTime(state.timer);
   document.getElementById('win-hints').textContent = state.hintsUsed;
   
-  const quote = getTodayQuote();
+  const quote = getTodayQuote(state.difficulty);
   document.getElementById('win-quote-theme').textContent = `✦ ${quote.theme}`;
   document.getElementById('win-quote-text').textContent = `"${quote.text}"`;
   document.getElementById('win-quote-source').textContent = `— ${quote.source}`;
@@ -1410,13 +1417,25 @@ function updateProgressUI() {
 
 function updateQuoteUI() {
   if (!state.quoteUnlocked) return;
-  const quote = getTodayQuote();
   const body = document.getElementById('quote-body');
-  body.innerHTML = `
-    <div class="quote-theme">✦ ${quote.theme}</div>
-    <div class="quote-text">"${quote.text}"</div>
-    <div class="quote-source">— ${quote.source}</div>
-  `;
+  const diffs = ['easy', 'medium', 'hard'];
+  const labels = { easy: '🌟 Easy', medium: '🔥 Medium', hard: '🏆 Hard' };
+  let html = '';
+  diffs.forEach(d => {
+    if (state.completed[d]) {
+      const q = getTodayQuote(d);
+      html += `
+        <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+          <div class="quote-theme" style="margin-bottom:0.3rem;">${labels[d]} · ${q.theme}</div>
+          <div class="quote-text">&ldquo;${q.text}&rdquo;</div>
+          <div class="quote-source">— ${q.source}</div>
+        </div>
+      `;
+    } else {
+      html += `<div style="opacity:0.3; font-size:0.8rem; margin-bottom:0.75rem; font-family:'DM Mono',monospace;">🔒 ${labels[d]} — complete to unlock</div>`;
+    }
+  });
+  body.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1459,6 +1478,7 @@ function loadPuzzle(difficulty) {
   state.difficulty = difficulty;
   state.selected = null;
   state.hintsUsed = 0;
+  state.checksUsed = 0;
   
   const { puzzle, solution } = getDailyPuzzle(difficulty);
   state.puzzle = puzzle;
@@ -1476,6 +1496,8 @@ function loadPuzzle(difficulty) {
   
   renderBoard();
   startTimer();
+  updateHintButton();
+  updateCheckButton();
   
   if (state.completed[difficulty]) {
     clearInterval(state.timerInterval);
@@ -1515,8 +1537,25 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+const MAX_HINTS = 3;
+
+function updateHintButton() {
+  const remaining = MAX_HINTS - state.hintsUsed;
+  const btn = document.getElementById('btn-hint');
+  const count = document.getElementById('hint-count');
+  count.textContent = `(${remaining})`;
+  if (remaining <= 0) {
+    btn.disabled = true;
+    btn.title = 'No hints remaining';
+  } else {
+    btn.disabled = false;
+    btn.title = '';
+  }
+}
+
 document.getElementById('btn-hint').addEventListener('click', () => {
-  // Find first empty or wrong cell near selected, or random
+  if (state.hintsUsed >= MAX_HINTS) return;
+
   let candidates = [];
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
@@ -1528,17 +1567,38 @@ document.getElementById('btn-hint').addEventListener('click', () => {
   state.userGrid[r][c] = state.solution[r][c];
   state.selected = [r, c];
   state.hintsUsed++;
+  updateHintButton();
   renderBoard();
   checkWin();
 });
 
+const MAX_CHECKS = 3;
+
+function updateCheckButton() {
+  const remaining = MAX_CHECKS - state.checksUsed;
+  const btn = document.getElementById('btn-validate');
+  const count = document.getElementById('check-count');
+  count.textContent = `(${remaining})`;
+  if (remaining <= 0) {
+    btn.disabled = true;
+    btn.title = 'No checks remaining';
+  } else {
+    btn.disabled = false;
+    btn.title = '';
+  }
+}
+
 document.getElementById('btn-validate').addEventListener('click', () => {
+  if (state.checksUsed >= MAX_CHECKS) return;
+  state.checksUsed++;
+  updateCheckButton();
+
   let errors = 0;
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
       if (state.userGrid[r][c] !== 0 && state.userGrid[r][c] !== state.solution[r][c])
         errors++;
-  
+
   if (errors === 0) {
     let empty = 0;
     for (let r = 0; r < 9; r++)
