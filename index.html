@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QSudoku — Daily Puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1a2e;
+  --paper: #f5f0e8;
+  --cream: #ede8dc;
+  --accent: #c8873a;
+  --accent2: #7b5ea7;
+  --easy: #4a9e6f;
+  --medium: #c8873a;
+  --hard: #c84a4a;
+  --line: rgba(26,26,46,0.15);
+  --shadow: 0 4px 32px rgba(26,26,46,0.12);
+  --r: 4px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GRAIN OVERLAY */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.6;
+}
+
+/* HEADER */
+header {
+  padding: 2rem 2rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.logo span { color: var(--accent); }
+
+.date-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: rgba(26,26,46,0.5);
+  text-align: right;
+  line-height: 1.6;
+  padding-top: 0.3rem;
+}
+.date-display strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.countdown-bar {
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 2rem;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(26,26,46,0.5);
+  letter-spacing: 0.08em;
+}
+.countdown-bar span { color: var(--accent); font-weight: 500; }
+
+/* DIFFICULTY TABS */
+.tabs {
+  display: flex;
+  gap: 0;
+  max-width: 1100px;
+  margin: 2rem auto 0;
+  padding: 0 2rem;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  color: rgba(26,26,46,0.5);
+}
+.tab:first-child { border-radius: var(--r) 0 0 var(--r); }
+.tab:last-child  { border-radius: 0 var(--r) var(--r) 0; }
+.tab + .tab { border-left: none; }
+
+.tab[data-diff="easy"].active   { background: var(--easy);   color: #fff; border-color: var(--easy); }
+.tab[data-diff="medium"].active { background: var(--medium); color: #fff; border-color: var(--medium); }
+.tab[data-diff="hard"].active   { background: var(--hard);   color: #fff; border-color: var(--hard); }
+.tab:hover:not(.active) { background: var(--cream); color: var(--ink); }
+
+/* MAIN LAYOUT */
+.main {
+  max-width: 1100px;
+  margin: 1.5rem auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .main {
+    grid-template-columns: 1fr;
+    padding: 0 1rem 3rem;
+    gap: 1.5rem;
+  }
+  .sidebar { position: static; }
+}
+
+/* MOBILE-SPECIFIC IMPROVEMENTS */
+@media (max-width: 600px) {
+  header { padding: 1rem 1rem 0; }
+  .tabs { padding: 0 1rem; margin-top: 1rem; }
+  .tab { padding: 0.75rem 0.5rem; font-size: 0.78rem; }
+
+  .board-wrap { gap: 0.9rem; }
+  .board-header { padding: 0 0; }
+  .diff-label { font-size: 1.2rem; }
+  .timer { font-size: 0.9rem; }
+
+  #sudoku-board { max-width: 100%; }
+
+  /* Bigger touch targets for numpad on mobile */
+  .numpad { gap: 0.4rem; }
+  .numpad-btn {
+    min-width: 0;
+    padding: 0.85rem 0.2rem;
+    font-size: 1.1rem;
+    min-height: 48px;
+  }
+  .numpad-btn.erase { font-size: 0.7rem; padding: 0.5rem 0.2rem; }
+
+  .actions { gap: 0.5rem; }
+  .btn { padding: 0.85rem 0.5rem; font-size: 0.8rem; min-height: 48px; }
+
+  /* Sidebar stacks below board — reorder cards for mobile priority */
+  .sidebar { order: 2; }
+  .board-wrap { order: 1; }
+
+  .card-body { padding: 1rem; }
+  .progress-item { font-size: 0.82rem; }
+
+  .win-modal { padding: 2rem 1.5rem; }
+  .win-title { font-size: 1.6rem; }
+  .win-stats { gap: 1.5rem; }
+}
+
+/* Touch active states (replaces hover on mobile) */
+@media (hover: none) {
+  .numpad-btn:active { background: var(--ink); color: white; border-color: var(--ink); }
+  .numpad-btn.erase:active { background: var(--hard); border-color: var(--hard); color: white; }
+  .btn:active { opacity: 0.75; }
+  .tab:active:not(.active) { background: var(--cream); }
+  .cell:active { background: rgba(123,94,167,0.18) !important; }
+}
+
+/* SUDOKU BOARD */
+.board-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.board-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.diff-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 400;
+}
+.diff-label.easy   { color: var(--easy); }
+.diff-label.medium { color: var(--medium); }
+.diff-label.hard   { color: var(--hard); }
+
+.timer {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(26,26,46,0.4);
+  letter-spacing: 0.05em;
+}
+
+#sudoku-board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--r);
+  overflow: hidden;
+  width: 100%;
+  max-width: 504px;
+  aspect-ratio: 1;
+  box-shadow: var(--shadow);
+  background: white;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(0.9rem, 2.5vw, 1.3rem);
+  font-weight: 500;
+  border: 1px solid rgba(26,26,46,0.1);
+  cursor: pointer;
+  transition: background 0.12s;
+  aspect-ratio: 1;
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Box borders */
+.cell[data-col="2"], .cell[data-col="5"] { border-right: 2px solid rgba(26,26,46,0.4); }
+.cell[data-row="2"], .cell[data-row="5"] { border-bottom: 2px solid rgba(26,26,46,0.4); }
+
+.cell.given { color: var(--ink); font-weight: 700; cursor: default; }
+.cell.editable { color: var(--accent2); }
+.cell.selected { background: rgba(123,94,167,0.12); }
+.cell.highlight { background: rgba(123,94,167,0.05); }
+.cell.error { color: var(--hard) !important; }
+.cell.correct { background: rgba(74,158,111,0.1); }
+
+/* NUMPAD */
+.numpad {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 504px;
+}
+.numpad-btn {
+  flex: 1;
+  min-width: 44px;
+  padding: 0.6rem 0.2rem;
+  border: 1.5px solid var(--line);
+  background: white;
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--ink);
+}
+.numpad-btn:hover { background: var(--ink); color: white; border-color: var(--ink); }
+.numpad-btn.erase { font-size: 0.75rem; letter-spacing: 0.03em; color: rgba(26,26,46,0.5); }
+.numpad-btn.erase:hover { background: var(--hard); border-color: var(--hard); color: white; }
+
+/* ACTIONS */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 504px;
+}
+.btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: white;
+  border-radius: var(--r);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.btn:hover { background: transparent; color: var(--ink); }
+.btn.outline { background: transparent; color: var(--ink); }
+.btn.outline:hover { background: var(--ink); color: white; }
+
+/* SIDEBAR */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  padding: 1rem 1.2rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.card-icon { font-size: 1rem; }
+.card-body { padding: 1.2rem; }
+
+/* PROGRESS */
+.progress-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+.progress-item:last-child { border-bottom: none; }
+.progress-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+.dot-easy { background: var(--easy); }
+.dot-medium { background: var(--medium); }
+.dot-hard { background: var(--hard); }
+.checkmark { font-size: 1rem; }
+
+/* QUOTE CARD */
+.quote-card {
+  background: var(--ink);
+  color: white;
+  border: none;
+}
+.quote-card .card-head { border-color: rgba(255,255,255,0.1); }
+.quote-card .card-title { color: white; }
+.quote-theme {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 500;
+}
+.quote-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 0.75rem;
+}
+.quote-source {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.05em;
+}
+.quote-locked {
+  text-align: center;
+  padding: 0.5rem;
+}
+.quote-locked .lock-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+.quote-locked p {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.5;
+}
+
+/* AFFILIATE PLACEHOLDER */
+.affiliate-card {
+  background: linear-gradient(135deg, var(--cream), var(--paper));
+  border: 1.5px dashed var(--line);
+}
+.affiliate-placeholder {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(26,26,46,0.35);
+  line-height: 1.6;
+  font-family: 'DM Mono', monospace;
+}
+.affiliate-placeholder strong {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  color: var(--accent);
+  font-family: 'DM Sans', sans-serif;
+}
+
+
+
+/* WIN OVERLAY */
+.win-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,26,46,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+  backdrop-filter: blur(4px);
+}
+.win-overlay.show { opacity: 1; pointer-events: all; }
+
+.win-modal {
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.3);
+  transform: translateY(30px);
+  transition: transform 0.4s ease;
+  position: relative;
+}
+.win-overlay.show .win-modal { transform: translateY(0); }
+
+.win-emoji { font-size: 3.5rem; margin-bottom: 1rem; }
+.win-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+.win-subtitle {
+  font-size: 0.85rem;
+  color: rgba(26,26,46,0.5);
+  margin-bottom: 2rem;
+  font-family: 'DM Mono', monospace;
+}
+.win-quote {
+  background: var(--ink);
+  color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+.win-quote .quote-theme { margin-bottom: 0.5rem; display: block; }
+.win-quote .quote-text { font-size: 1rem; margin-bottom: 0.5rem; }
+.win-stats {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+.win-stat {
+  text-align: center;
+}
+.win-stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+.win-stat-label {
+  font-size: 0.7rem;
+  color: rgba(26,26,46,0.4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ANIMATIONS */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.board-wrap, .sidebar > * {
+  animation: fadeSlideIn 0.5s ease both;
+}
+.sidebar > *:nth-child(2) { animation-delay: 0.08s; }
+.sidebar > *:nth-child(3) { animation-delay: 0.16s; }
+.sidebar > *:nth-child(4) { animation-delay: 0.24s; }
+
+@keyframes cellPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.cell.pop { animation: cellPop 0.2s ease; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+.cell.shake { animation: shake 0.3s ease; }
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  animation: confetti-fall 2.5s ease-in forwards;
+  pointer-events: none;
+  z-index: 9000;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: rgba(26,26,46,0.3);
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--line);
+}
+</style>
+</head>
+<body>
+
+<div class="countdown-bar">
+  Next puzzle in: <span id="countdown">--:--:--</span> &nbsp;·&nbsp; GMT Midnight Reset
+</div>
+
+<header>
+  <div class="logo">Q<span>S</span>udoku</div>
+  <div class="date-display">
+    <strong id="date-str">Loading…</strong>
+    <span>Daily Puzzle #<span id="puzzle-num">—</span></span>
+  </div>
+</header>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-diff="easy">Easy</button>
+  <button class="tab" data-diff="medium">Medium</button>
+  <button class="tab" data-diff="hard">Hard</button>
+</div>
+
+<div class="main">
+  <div class="board-wrap">
+    <div class="board-header">
+      <div class="diff-label easy" id="diff-label">Easy</div>
+      <div class="timer" id="timer">00:00</div>
+    </div>
+    <div id="sudoku-board"></div>
+    <div class="numpad" id="numpad"></div>
+    <div class="actions">
+      <button class="btn outline" id="btn-hint">💡 Hint</button>
+      <button class="btn outline" id="btn-validate">✓ Check</button>
+      <button class="btn" id="btn-reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <!-- Progress Card -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-icon">📅</span>
+        <span class="card-title">Today's Progress</span>
+      </div>
+      <div class="card-body">
+        <div class="progress-item">
+          <span><span class="progress-dot dot-easy"></span>Easy</span>
+          <span class="checkmark" id="prog-easy">○</span>
+        </div>
+        <div class="progress-item">
+          <span><span class="progress-dot dot-medium"></span>Medium</span>
+          <span class="checkmark" id="prog-medium">○</span>
+        </div>
+        <div class="progress-item">
+          <span><span class="progress-dot dot-hard"></span>Hard</span>
+          <span class="checkmark" id="prog-hard">○</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quote Card -->
+    <div class="card quote-card" id="quote-card">
+      <div class="card-head">
+        <span class="card-icon">✦</span>
+        <span class="card-title">Today's Quote</span>
+      </div>
+      <div class="card-body" id="quote-body">
+        <div class="quote-locked">
+          <span class="lock-icon">🔒</span>
+          <p>Complete any puzzle to unlock today's quote.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Affiliate Placeholder -->
+    <div class="card affiliate-card">
+      <div class="card-head">
+        <span class="card-icon">🎁</span>
+        <span class="card-title">Special Offers</span>
+      </div>
+      <div class="card-body">
+        <div class="affiliate-placeholder">
+          <strong>Coming Soon</strong>
+          Exclusive discounts for QSudoku players.<br>Solve daily puzzles to unlock member deals.
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- Win Overlay -->
+<div class="win-overlay" id="win-overlay">
+  <div class="win-modal">
+    <div class="win-emoji" id="win-emoji">🎉</div>
+    <div class="win-title" id="win-title">Puzzle Solved!</div>
+    <div class="win-subtitle" id="win-subtitle">Level Complete</div>
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-num" id="win-time">0:00</div>
+        <div class="win-stat-label">Time</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-num" id="win-hints">0</div>
+        <div class="win-stat-label">Hints</div>
+      </div>
+    </div>
+    <div class="win-quote" id="win-quote-block">
+      <span class="quote-theme" id="win-quote-theme"></span>
+      <div class="quote-text" id="win-quote-text"></div>
+      <div class="quote-source" id="win-quote-source"></div>
+    </div>
+    <button class="btn" id="btn-next-puzzle">Try Next Level →</button>
+  </div>
+</div>
+
+<footer>QSudoku — Daily Puzzles · Resets at midnight GMT · Made with ♥</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  MONTHLY THEMED QUOTES
+// ═══════════════════════════════════════════════════
+const MONTHLY_THEMES = [
+  { theme: "Classic Films", quotes: [
+    { text: "Life is like a box of chocolates, you never know what you're gonna get.", source: "Forrest Gump, 1994" },
+    { text: "To infinity and beyond!", source: "Toy Story, 1995" },
+    { text: "Here's looking at you, kid.", source: "Casablanca, 1942" },
+    { text: "You can't handle the truth!", source: "A Few Good Men, 1992" },
+    { text: "I'll be back.", source: "The Terminator, 1984" },
+    { text: "May the Force be with you.", source: "Star Wars, 1977" },
+    { text: "Elementary, my dear Watson.", source: "The Adventures of Sherlock Holmes, 1929" },
+    { text: "I'm the king of the world!", source: "Titanic, 1997" },
+    { text: "You is kind, you is smart, you is important.", source: "The Help, 2011" },
+    { text: "The stuff that dreams are made of.", source: "The Maltese Falcon, 1941" },
+    { text: "Just keep swimming.", source: "Finding Nemo, 2003" },
+    { text: "With great power comes great responsibility.", source: "Spider-Man, 2002" },
+    { text: "It's not who I am underneath, but what I do that defines me.", source: "Batman Begins, 2005" },
+    { text: "You've got a friend in me.", source: "Toy Story, 1995" },
+    { text: "Why so serious?", source: "The Dark Knight, 2008" },
+    { text: "Our lives are defined by opportunities, even the ones we miss.", source: "The Curious Case of Benjamin Button, 2008" },
+    { text: "We accept the love we think we deserve.", source: "The Perks of Being a Wallflower, 2012" },
+    { text: "Every passing minute is another chance to turn it all around.", source: "Vanilla Sky, 2001" },
+    { text: "It ain't about how hard you hit. It's about how hard you can get hit and keep moving forward.", source: "Rocky Balboa, 2006" },
+    { text: "The greatest thing you'll ever learn is just to love and be loved in return.", source: "Moulin Rouge, 2001" },
+    { text: "Hope is a good thing, maybe the best of things.", source: "The Shawshank Redemption, 1994" },
+    { text: "Get busy living or get busy dying.", source: "The Shawshank Redemption, 1994" },
+    { text: "Do or do not. There is no try.", source: "Star Wars: The Empire Strikes Back, 1980" },
+    { text: "You either die a hero or you live long enough to see yourself become the villain.", source: "The Dark Knight, 2008" },
+    { text: "To see the world, things dangerous to come to, to see behind walls, to draw closer.", source: "The Secret Life of Walter Mitty, 2013" },
+    { text: "All those moments will be lost in time, like tears in rain.", source: "Blade Runner, 1982" },
+    { text: "Nobody puts Baby in a corner.", source: "Dirty Dancing, 1987" },
+    { text: "Carpe diem. Seize the day, boys.", source: "Dead Poets Society, 1989" },
+    { text: "We are who we choose to be.", source: "Spider-Man, 2002" },
+    { text: "Adventure is out there!", source: "Up, 2009" },
+    { text: "To infinity and beyond.", source: "Toy Story, 1995" }
+  ]},
+  { theme: "Great Literature", quotes: [
+    { text: "Not all those who wander are lost.", source: "J.R.R. Tolkien, The Fellowship of the Ring" },
+    { text: "It does not do to dwell on dreams and forget to live.", source: "J.K. Rowling, Harry Potter and the Sorcerer's Stone" },
+    { text: "It is our choices that show what we truly are, far more than our abilities.", source: "J.K. Rowling, Harry Potter and the Chamber of Secrets" },
+    { text: "The only way out of the labyrinth of suffering is to forgive.", source: "John Green, Looking for Alaska" },
+    { text: "I took a deep breath and listened to the old brag of my heart: I am, I am, I am.", source: "Sylvia Plath, The Bell Jar" },
+    { text: "We are all fools in love.", source: "Jane Austen, Pride and Prejudice" },
+    { text: "It is a truth universally acknowledged…", source: "Jane Austen, Pride and Prejudice" },
+    { text: "I am not afraid of storms, for I am learning how to sail my ship.", source: "Louisa May Alcott, Little Women" },
+    { text: "So we beat on, boats against the current, borne back ceaselessly into the past.", source: "F. Scott Fitzgerald, The Great Gatsby" },
+    { text: "The answer, my friend, is blowin' in the wind.", source: "Bob Dylan" },
+    { text: "All animals are equal, but some animals are more equal than others.", source: "George Orwell, Animal Farm" },
+    { text: "It was a bright cold day in April, and the clocks were striking thirteen.", source: "George Orwell, 1984" },
+    { text: "In the beginning was the Word.", source: "The Bible, John 1:1" },
+    { text: "Call me Ishmael.", source: "Herman Melville, Moby Dick" },
+    { text: "It was the best of times, it was the worst of times.", source: "Charles Dickens, A Tale of Two Cities" },
+    { text: "To be or not to be, that is the question.", source: "William Shakespeare, Hamlet" },
+    { text: "All happy families are alike; each unhappy family is unhappy in its own way.", source: "Leo Tolstoy, Anna Karenina" },
+    { text: "One must always be careful of books, and what is inside them.", source: "Cassandra Clare, City of Bones" },
+    { text: "Words are, in my not-so-humble opinion, our most inexhaustible source of magic.", source: "J.K. Rowling, Harry Potter and the Deathly Hallows" },
+    { text: "The world is a book, and those who do not travel read only one page.", source: "Saint Augustine" },
+    { text: "Happiness can be found, even in the darkest of times, if one only remembers to turn on the light.", source: "J.K. Rowling, Harry Potter and the Prisoner of Azkaban" },
+    { text: "Books are a uniquely portable magic.", source: "Stephen King, On Writing" },
+    { text: "A reader lives a thousand lives before he dies.", source: "George R.R. Martin, A Dance with Dragons" },
+    { text: "Not all those who wander are lost.", source: "J.R.R. Tolkien" },
+    { text: "I am not afraid of storms, for I am learning how to sail my ship.", source: "Louisa May Alcott" },
+    { text: "The more that you read, the more things you will know.", source: "Dr. Seuss" },
+    { text: "There is no friend as loyal as a book.", source: "Ernest Hemingway" },
+    { text: "One must always be careful of books.", source: "Cassandra Clare" },
+    { text: "Outside of a dog, a book is man's best friend.", source: "Groucho Marx" },
+    { text: "I declare after all there is no enjoyment like reading!", source: "Jane Austen, Pride and Prejudice" },
+    { text: "If you don't like to read, you haven't found the right book.", source: "J.K. Rowling" }
+  ]},
+  { theme: "Science & Discovery", quotes: [
+    { text: "Imagination is more important than knowledge.", source: "Albert Einstein" },
+    { text: "The important thing is not to stop questioning.", source: "Albert Einstein" },
+    { text: "Science is a way of thinking much more than it is a body of knowledge.", source: "Carl Sagan" },
+    { text: "Somewhere, something incredible is waiting to be known.", source: "Carl Sagan" },
+    { text: "The universe is under no obligation to make sense to you.", source: "Neil deGrasse Tyson" },
+    { text: "What we know is a drop, what we don't know is an ocean.", source: "Isaac Newton" },
+    { text: "The good thing about science is that it's true whether or not you believe in it.", source: "Neil deGrasse Tyson" },
+    { text: "If I have seen further it is by standing on the shoulders of Giants.", source: "Isaac Newton" },
+    { text: "In the middle of every difficulty lies opportunity.", source: "Albert Einstein" },
+    { text: "The cosmos is within us. We are made of star-stuff.", source: "Carl Sagan" },
+    { text: "Science is the poetry of reality.", source: "Richard Dawkins" },
+    { text: "The mind is not a vessel to be filled but a fire to be kindled.", source: "Plutarch" },
+    { text: "An investment in knowledge pays the best interest.", source: "Benjamin Franklin" },
+    { text: "Equipped with his five senses, man explores the universe around him.", source: "Edwin Hubble" },
+    { text: "We are all connected; to each other, biologically; to the Earth, chemically; to the rest of the universe, atomically.", source: "Neil deGrasse Tyson" },
+    { text: "Life is not easy for any of us. But what of that? We must have perseverance.", source: "Marie Curie" },
+    { text: "Be less curious about people and more curious about ideas.", source: "Marie Curie" },
+    { text: "Nothing in life is to be feared, it is only to be understood.", source: "Marie Curie" },
+    { text: "The greatest enemy of knowledge is not ignorance, it is the illusion of knowledge.", source: "Daniel J. Boorstin" },
+    { text: "Science is organized knowledge. Wisdom is organized life.", source: "Immanuel Kant" },
+    { text: "We shall not cease from exploration.", source: "T.S. Eliot" },
+    { text: "Discovery consists of seeing what everybody has seen and thinking what nobody has thought.", source: "Albert von Szent-Györgyi" },
+    { text: "The art and science of asking questions is the source of all knowledge.", source: "Thomas Berger" },
+    { text: "Curiosity is the engine of achievement.", source: "Ken Robinson" },
+    { text: "The measure of intelligence is the ability to change.", source: "Albert Einstein" },
+    { text: "Learn from yesterday, live for today, hope for tomorrow.", source: "Albert Einstein" },
+    { text: "Logic will get you from A to Z; imagination will get you everywhere.", source: "Albert Einstein" },
+    { text: "A person who never made a mistake never tried anything new.", source: "Albert Einstein" },
+    { text: "Two things are infinite: the universe and human stupidity.", source: "Albert Einstein" },
+    { text: "Try to learn something about everything and everything about something.", source: "Thomas Huxley" },
+    { text: "Research is what I'm doing when I don't know what I'm doing.", source: "Wernher von Braun" }
+  ]},
+  { theme: "Ancient Wisdom", quotes: [
+    { text: "Know thyself.", source: "Socrates" },
+    { text: "The unexamined life is not worth living.", source: "Socrates" },
+    { text: "We are what we repeatedly do. Excellence is not an act, but a habit.", source: "Aristotle" },
+    { text: "Knowing yourself is the beginning of all wisdom.", source: "Aristotle" },
+    { text: "The secret of change is to focus all of your energy not on fighting the old, but on building the new.", source: "Socrates (via Dan Millman)" },
+    { text: "He who has a why to live can bear almost any how.", source: "Friedrich Nietzsche" },
+    { text: "A journey of a thousand miles begins with a single step.", source: "Lao Tzu" },
+    { text: "He who thinks great thoughts, often makes great errors.", source: "Martin Heidegger" },
+    { text: "The obstacle is the way.", source: "Marcus Aurelius" },
+    { text: "Waste no more time arguing what a good man should be. Be one.", source: "Marcus Aurelius" },
+    { text: "The happiness of your life depends upon the quality of your thoughts.", source: "Marcus Aurelius" },
+    { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", source: "Marcus Aurelius" },
+    { text: "It is not death that a man should fear, but he should fear never beginning to live.", source: "Marcus Aurelius" },
+    { text: "Accept the things to which fate binds you.", source: "Marcus Aurelius" },
+    { text: "The best revenge is not to be like your enemy.", source: "Marcus Aurelius" },
+    { text: "Everything we hear is an opinion, not a fact.", source: "Marcus Aurelius" },
+    { text: "Never let the future disturb you. You will meet it, if you have to, with the same weapons of reason.", source: "Marcus Aurelius" },
+    { text: "Be tolerant with others and strict with yourself.", source: "Marcus Aurelius" },
+    { text: "When you wake up in the morning, tell yourself: The people I deal with today will be meddling, ungrateful, arrogant, dishonest, jealous and surly.", source: "Marcus Aurelius" },
+    { text: "Give yourself a gift: the present moment.", source: "Marcus Aurelius" },
+    { text: "Man is not disturbed by events, but by the view he takes of them.", source: "Epictetus" },
+    { text: "First, say to yourself what you would be; then do what you have to do.", source: "Epictetus" },
+    { text: "No man is free who is not master of himself.", source: "Epictetus" },
+    { text: "There is only one way to happiness and that is to cease worrying about things which are beyond our control.", source: "Epictetus" },
+    { text: "Make the best use of what is in your power, and take the rest as it happens.", source: "Epictetus" },
+    { text: "He is a wise man who does not grieve for the things which he has not, but rejoices for those which he has.", source: "Epictetus" },
+    { text: "Seek not the good in external things; seek it in yourself.", source: "Epictetus" },
+    { text: "If you want to improve, be content to be thought foolish and stupid.", source: "Epictetus" },
+    { text: "The key is to keep company only with people who uplift you.", source: "Epictetus" },
+    { text: "Wealth consists not in having great possessions, but in having few wants.", source: "Epictetus" },
+    { text: "Practice yourself, for heaven's sake, in little things, and then proceed to greater.", source: "Epictetus" }
+  ]},
+  { theme: "Music & Art", quotes: [
+    { text: "Music gives a soul to the universe, wings to the mind, flight to the imagination, and life to everything.", source: "Plato" },
+    { text: "Without music, life would be a mistake.", source: "Friedrich Nietzsche" },
+    { text: "Creativity is intelligence having fun.", source: "Albert Einstein" },
+    { text: "Every artist dips his brush in his own soul.", source: "Henry Ward Beecher" },
+    { text: "Art is not what you see, but what you make others see.", source: "Edgar Degas" },
+    { text: "The purpose of art is washing the dust of daily life off our souls.", source: "Pablo Picasso" },
+    { text: "Creativity takes courage.", source: "Henri Matisse" },
+    { text: "I dream my painting and I paint my dream.", source: "Vincent Van Gogh" },
+    { text: "Art enables us to find ourselves and lose ourselves at the same time.", source: "Thomas Merton" },
+    { text: "The object of art is to give life a shape.", source: "Jean Anouilh" },
+    { text: "Music is the shorthand of emotion.", source: "Leo Tolstoy" },
+    { text: "Life is the art of drawing without an eraser.", source: "John W. Gardner" },
+    { text: "Every child is an artist. The problem is how to remain an artist once we grow up.", source: "Pablo Picasso" },
+    { text: "To practice any art, no matter how well or badly, is a way to make your soul grow.", source: "Kurt Vonnegut" },
+    { text: "The most beautiful thing we can experience is the mysterious.", source: "Albert Einstein" },
+    { text: "Art is never finished, only abandoned.", source: "Leonardo da Vinci" },
+    { text: "Where words fail, music speaks.", source: "Hans Christian Andersen" },
+    { text: "One good thing about music, when it hits you, you feel no pain.", source: "Bob Marley" },
+    { text: "Music is what feelings sound like.", source: "Author Unknown" },
+    { text: "If I were not a physicist, I would probably be a musician.", source: "Albert Einstein" },
+    { text: "Art washes away from the soul the dust of everyday life.", source: "Pablo Picasso" },
+    { text: "Painting is poetry that is seen rather than felt.", source: "Leonardo da Vinci" },
+    { text: "The mediocre teacher tells. The good teacher explains. The superior teacher demonstrates. The great teacher inspires.", source: "William Arthur Ward" },
+    { text: "A work of art which did not begin in emotion is not art.", source: "Paul Cézanne" },
+    { text: "All art is quite useless.", source: "Oscar Wilde, The Picture of Dorian Gray" },
+    { text: "Music can change the world because it can change people.", source: "Bono" },
+    { text: "To create one's world in any of the arts takes courage.", source: "Georgia O'Keeffe" },
+    { text: "The position of the artist is humble. He is essentially a channel.", source: "Piet Mondrian" },
+    { text: "We don't make mistakes, just happy little accidents.", source: "Bob Ross" },
+    { text: "You have to be burning with an idea, or a problem, or a wrong that you want to right.", source: "Steve Jobs" },
+    { text: "Simplicity is the ultimate sophistication.", source: "Leonardo da Vinci" }
+  ]},
+  { theme: "Motivational Masters", quotes: [
+    { text: "The only way to do great work is to love what you do.", source: "Steve Jobs" },
+    { text: "In the middle of every difficulty lies opportunity.", source: "Albert Einstein" },
+    { text: "Believe you can and you're halfway there.", source: "Theodore Roosevelt" },
+    { text: "It does not matter how slowly you go as long as you do not stop.", source: "Confucius" },
+    { text: "Everything you've ever wanted is on the other side of fear.", source: "George Addair" },
+    { text: "Success is not final; failure is not fatal: it is the courage to continue that counts.", source: "Winston Churchill" },
+    { text: "Act as if what you do makes a difference. It does.", source: "William James" },
+    { text: "The best time to plant a tree was 20 years ago. The second best time is now.", source: "Chinese Proverb" },
+    { text: "Keep your face always toward the sunshine, and shadows will fall behind you.", source: "Walt Whitman" },
+    { text: "You are never too old to set another goal or to dream a new dream.", source: "C.S. Lewis" },
+    { text: "It always seems impossible until it's done.", source: "Nelson Mandela" },
+    { text: "The future belongs to those who believe in the beauty of their dreams.", source: "Eleanor Roosevelt" },
+    { text: "You must be the change you wish to see in the world.", source: "Mahatma Gandhi" },
+    { text: "Spread love everywhere you go.", source: "Mother Teresa" },
+    { text: "When you reach the end of your rope, tie a knot in it and hang on.", source: "Franklin D. Roosevelt" },
+    { text: "Always remember that you are absolutely unique. Just like everyone else.", source: "Margaret Mead" },
+    { text: "Don't judge each day by the harvest you reap but by the seeds that you plant.", source: "Robert Louis Stevenson" },
+    { text: "The purpose of our lives is to be happy.", source: "Dalai Lama" },
+    { text: "Get up, stand up, stand up for your rights.", source: "Bob Marley" },
+    { text: "Life is what happens when you're busy making other plans.", source: "John Lennon" },
+    { text: "You only live once, but if you do it right, once is enough.", source: "Mae West" },
+    { text: "In three words I can sum up everything I've learned about life: it goes on.", source: "Robert Frost" },
+    { text: "If you look at what you have in life, you'll always have more.", source: "Oprah Winfrey" },
+    { text: "If you want to live a happy life, tie it to a goal, not to people or things.", source: "Albert Einstein" },
+    { text: "Never let the fear of striking out keep you from playing the game.", source: "Babe Ruth" },
+    { text: "Money and success don't change people; they merely amplify what is already there.", source: "Will Smith" },
+    { text: "The real test is not whether you avoid this failure, because you won't. It's whether you let it harden or shame you into inaction.", source: "Barack Obama" },
+    { text: "We need to accept that we won't always make the right decisions, that we'll screw up royally sometimes.", source: "Arianna Huffington" },
+    { text: "When I dare to be powerful, to use my strength in the service of my vision, then it becomes less and less important whether I am afraid.", source: "Audre Lorde" },
+    { text: "It is our choices, Harry, that show what we truly are, far more than our abilities.", source: "J.K. Rowling" },
+    { text: "How wonderful it is that nobody need wait a single moment before starting to improve the world.", source: "Anne Frank" }
+  ]},
+  { theme: "Sci-Fi Universes", quotes: [
+    { text: "Space is big. You just won't believe how vastly, hugely, mind-bogglingly big it is.", source: "Douglas Adams, The Hitchhiker's Guide to the Galaxy" },
+    { text: "The answer to the ultimate question of life, the universe, and everything is 42.", source: "Douglas Adams" },
+    { text: "Live long and prosper.", source: "Spock, Star Trek" },
+    { text: "Resistance is futile.", source: "The Borg, Star Trek: The Next Generation" },
+    { text: "I am a leaf on the wind — watch how I soar.", source: "Wash, Serenity" },
+    { text: "It's a trap!", source: "Admiral Ackbar, Star Wars: Return of the Jedi" },
+    { text: "So say we all.", source: "Battlestar Galactica" },
+    { text: "You can't take the sky from me.", source: "Firefly" },
+    { text: "We are the Borg. You will be assimilated.", source: "Star Trek: The Next Generation" },
+    { text: "I'll be back.", source: "The Terminator, 1984" },
+    { text: "Hasta la vista, baby.", source: "Terminator 2: Judgment Day, 1991" },
+    { text: "My precious.", source: "Gollum, The Lord of the Rings" },
+    { text: "One ring to rule them all.", source: "J.R.R. Tolkien, The Lord of the Rings" },
+    { text: "That's no moon. It's a space station.", source: "Obi-Wan Kenobi, Star Wars" },
+    { text: "I find your lack of faith disturbing.", source: "Darth Vader, Star Wars" },
+    { text: "Help me, Obi-Wan Kenobi. You're my only hope.", source: "Princess Leia, Star Wars" },
+    { text: "Never tell me the odds.", source: "Han Solo, Star Wars" },
+    { text: "I am your father.", source: "Darth Vader, Star Wars: The Empire Strikes Back" },
+    { text: "The Force will be with you, always.", source: "Obi-Wan Kenobi, Star Wars" },
+    { text: "E.T. phone home.", source: "E.T. the Extra-Terrestrial, 1982" },
+    { text: "Get your stinking paws off me, you damned dirty ape!", source: "Planet of the Apes, 1968" },
+    { text: "Open the pod bay doors, HAL.", source: "Dave Bowman, 2001: A Space Odyssey" },
+    { text: "I'm sorry, Dave. I'm afraid I can't do that.", source: "HAL 9000, 2001: A Space Odyssey" },
+    { text: "In space, no one can hear you scream.", source: "Alien, 1979" },
+    { text: "I want to believe.", source: "Fox Mulder, The X-Files" },
+    { text: "Logic clearly dictates that the needs of the many outweigh the needs of the few.", source: "Spock, Star Trek II: The Wrath of Khan" },
+    { text: "There's no fate but what we make for ourselves.", source: "Sarah Connor, Terminator 2" },
+    { text: "What is real? How do you define real?", source: "Morpheus, The Matrix" },
+    { text: "You take the blue pill, the story ends.", source: "Morpheus, The Matrix" },
+    { text: "There is no spoon.", source: "The Matrix" },
+    { text: "Buckle up, Dorothy, because Kansas is going bye-bye.", source: "Cypher, The Matrix" }
+  ]},
+  { theme: "Nature & Earth", quotes: [
+    { text: "Look deep into nature, and then you will understand everything better.", source: "Albert Einstein" },
+    { text: "The Earth has music for those who listen.", source: "William Shakespeare" },
+    { text: "In every walk with nature, one receives far more than he seeks.", source: "John Muir" },
+    { text: "Nature does not hurry, yet everything is accomplished.", source: "Lao Tzu" },
+    { text: "The clearest way into the Universe is through a forest wilderness.", source: "John Muir" },
+    { text: "Adopt the pace of nature: her secret is patience.", source: "Ralph Waldo Emerson" },
+    { text: "The mountains are calling and I must go.", source: "John Muir" },
+    { text: "Not all who wander are lost.", source: "J.R.R. Tolkien" },
+    { text: "Thousands of tired, nerve-shaken, over-civilized people are beginning to find out that going to the mountains is going home.", source: "John Muir" },
+    { text: "Going to the woods is going home.", source: "John Muir" },
+    { text: "Trees are poems the Earth writes upon the sky.", source: "Kahlil Gibran" },
+    { text: "The ocean stirs the heart, inspires the imagination and brings eternal joy to the soul.", source: "Wyland" },
+    { text: "Water is life's matter and matrix, mother and medium.", source: "Albert Szent-Gyorgyi" },
+    { text: "To walk in nature is to witness a thousand miracles.", source: "Mary Davis" },
+    { text: "Nature is not a place to visit. It is home.", source: "Gary Snyder" },
+    { text: "The poetry of the earth is never dead.", source: "John Keats" },
+    { text: "If you truly love nature, you will find beauty everywhere.", source: "Vincent Van Gogh" },
+    { text: "Keep your love of nature, for that is the true way to understand art more and more.", source: "Vincent Van Gogh" },
+    { text: "The goal of life is to make your heartbeat match the beat of the universe.", source: "Joseph Campbell" },
+    { text: "Earth laughs in flowers.", source: "Ralph Waldo Emerson" },
+    { text: "It is not so much for its beauty that the forest makes a claim upon men's hearts, as for that subtle something which conceals itself.", source: "Robert Louis Stevenson" },
+    { text: "The more clearly we can focus our attention on the wonders and realities of the universe about us, the less taste we shall have for destruction.", source: "Rachel Carson" },
+    { text: "The world is big and I want to have a good look at it before it gets dark.", source: "John Muir" },
+    { text: "We don't inherit the earth from our ancestors, we borrow it from our children.", source: "Antoine de Saint-Exupéry" },
+    { text: "The environment is where we all meet; where we all have a mutual interest; it is the one thing all of us share.", source: "Lady Bird Johnson" },
+    { text: "In every grain of sand there is a story of the earth.", source: "Rachel Carson" },
+    { text: "One touch of nature makes the whole world kin.", source: "William Shakespeare" },
+    { text: "For most of history, man has had to fight nature to survive; in this century he is beginning to realize that, in order to survive, he must protect it.", source: "Jacques-Yves Cousteau" },
+    { text: "What is the use of a house if you haven't got a tolerable planet to put it on?", source: "Henry David Thoreau" },
+    { text: "We have met the enemy, and he is us.", source: "Walt Kelly, Pogo" },
+    { text: "The health of the eye seems to demand a horizon.", source: "Ralph Waldo Emerson" }
+  ]},
+  { theme: "Anime & Manga", quotes: [
+    { text: "Believe it!", source: "Naruto Uzumaki, Naruto" },
+    { text: "Power comes in response to a need, not a desire.", source: "Goku, Dragon Ball Z" },
+    { text: "Whatever you lose, you'll find it again. But what you throw away you'll never get back.", source: "Himura Kenshin, Rurouni Kenshin" },
+    { text: "If you don't take risks, you can't create a future!", source: "Monkey D. Luffy, One Piece" },
+    { text: "People's lives don't end when they die. It ends when they lose faith.", source: "Itachi Uchiha, Naruto" },
+    { text: "Even if you're weak, there are miracles you can seize with your hands.", source: "Natsu Dragneel, Fairy Tail" },
+    { text: "A person grows up when he's able to overcome hardships.", source: "Pain, Naruto" },
+    { text: "The world isn't perfect. But it's there for us, doing the best it can.", source: "Roy Mustang, Fullmetal Alchemist" },
+    { text: "Alchemy: the science of understanding, deconstructing, and reconstructing matter.", source: "Edward Elric, Fullmetal Alchemist" },
+    { text: "A lesson without pain is meaningless.", source: "Edward Elric, Fullmetal Alchemist: Brotherhood" },
+    { text: "It's not the face that makes someone a monster; it's the choices they make with their lives.", source: "Naruto Uzumaki, Naruto" },
+    { text: "Hard work betrays none, but dreams betray many.", source: "Hachiman Hikigaya, My Teen Romantic Comedy SNAFU" },
+    { text: "To know sorrow is not terrifying. What is terrifying is to know you can't go back to happiness you could have.", source: "Matsumoto Rangiku, Bleach" },
+    { text: "Fear is not evil. It tells you what your weakness is. And once you know your weakness, you can become stronger.", source: "Gildarts Clive, Fairy Tail" },
+    { text: "How can you move forward if you keep regretting the past?", source: "Fullmetal Alchemist" },
+    { text: "We are all like fireworks. We climb, shine, and always go our separate ways and become further apart.", source: "Tite Kubo, Bleach" },
+    { text: "The world of the impure, the world of the corrupt. These are the things that are most interesting.", source: "Light Yagami, Death Note" },
+    { text: "I am justice!", source: "Light Yagami, Death Note" },
+    { text: "No matter how deep the night, it always turns to day, eventually.", source: "One Piece" },
+    { text: "When do you think people die? When they are hit by a bullet? No! When they are suffering from a disease? No! When they eat a soup made out of a poisonous mushroom? No! It's when they are forgotten!", source: "Dr. Hiluluk, One Piece" },
+    { text: "The loneliest people are the kindest. The saddest people smile the brightest.", source: "Author Unknown" },
+    { text: "It's painful and hard, but that is not the reason to give up.", source: "Kirito, Sword Art Online" },
+    { text: "Life is not a game of luck. If you wanna win, work hard.", source: "Sora, No Game No Life" },
+    { text: "Those who turn their hands against their comrades are sure to die a terrible death.", source: "Zabuza, Naruto" },
+    { text: "Don't beg for things. Do it yourself, or else you won't get anything.", source: "Nausicaä, Nausicaä of the Valley of the Wind" },
+    { text: "No matter how far ahead the goal seems, never stop. Even a small step gets you closer.", source: "Korosensei, Assassination Classroom" },
+    { text: "All living creatures have the capacity to wish for and pursue a 'better world'.", source: "Yasuhiro Nightow, Trigun" },
+    { text: "If you realize you've made a mistake, make up for it right then.", source: "Onizuka Eikichi, GTO" },
+    { text: "You can't win a game by doing nothing.", source: "Shikamaru Nara, Naruto" },
+    { text: "Only I can call myself a coward!", source: "Kuwabara, Yu Yu Hakusho" },
+    { text: "The strong don't win. The winners are the strong ones.", source: "Gurren Lagann" }
+  ]},
+  { theme: "Philosophy & Mind", quotes: [
+    { text: "I think, therefore I am.", source: "René Descartes" },
+    { text: "He who has a why to live can bear almost any how.", source: "Friedrich Nietzsche" },
+    { text: "That which does not kill us makes us stronger.", source: "Friedrich Nietzsche" },
+    { text: "Without music, life would be a mistake.", source: "Friedrich Nietzsche" },
+    { text: "To live is to suffer, to survive is to find some meaning in the suffering.", source: "Friedrich Nietzsche" },
+    { text: "It is not the strongest of the species that survives, nor the most intelligent. It is the one most adaptable to change.", source: "Charles Darwin" },
+    { text: "The measure of a man is what he does with power.", source: "Plato" },
+    { text: "Reality is merely an illusion, albeit a very persistent one.", source: "Albert Einstein" },
+    { text: "The only true wisdom is in knowing you know nothing.", source: "Socrates" },
+    { text: "Education is the kindling of a flame, not the filling of a vessel.", source: "Socrates" },
+    { text: "To know what you know and what you do not know, that is true knowledge.", source: "Confucius" },
+    { text: "Our life is what our thoughts make it.", source: "Marcus Aurelius" },
+    { text: "He who is not a good servant will not be a good master.", source: "Plato" },
+    { text: "Attention is the rarest and purest form of generosity.", source: "Simone Weil" },
+    { text: "Happiness is not something ready-made. It comes from your own actions.", source: "Dalai Lama" },
+    { text: "If you want to be happy, be.", source: "Leo Tolstoy" },
+    { text: "Begin at once to live, and count each separate day as a separate life.", source: "Seneca" },
+    { text: "Luck is what happens when preparation meets opportunity.", source: "Seneca" },
+    { text: "We suffer more in imagination than in reality.", source: "Seneca" },
+    { text: "It is not that I'm so smart. But I stay with the questions much longer.", source: "Albert Einstein" },
+    { text: "Sanity and happiness are an impossible combination.", source: "Mark Twain" },
+    { text: "The mind is its own place, and in itself can make a heaven of hell, a hell of heaven.", source: "John Milton" },
+    { text: "To doubt everything or to believe everything are two equally convenient solutions; both dispense with the necessity of reflection.", source: "Henri Poincaré" },
+    { text: "Philosophy is a battle against the bewitchment of our intelligence by means of our language.", source: "Ludwig Wittgenstein" },
+    { text: "We live in the best of all possible worlds.", source: "Gottfried Wilhelm Leibniz" },
+    { text: "To do as one would be done by, and to love one's neighbour as oneself.", source: "John Stuart Mill" },
+    { text: "The good life is one inspired by love and guided by knowledge.", source: "Bertrand Russell" },
+    { text: "Science is what you know. Philosophy is what you don't know.", source: "Bertrand Russell" },
+    { text: "The time you enjoy wasting is not wasted time.", source: "Bertrand Russell" },
+    { text: "Do what you can, with what you have, where you are.", source: "Theodore Roosevelt" },
+    { text: "Change your thoughts and you change your world.", source: "Norman Vincent Peale" }
+  ]},
+  { theme: "Sports Legends", quotes: [
+    { text: "You miss 100% of the shots you don't take.", source: "Wayne Gretzky" },
+    { text: "I've failed over and over and over again in my life, and that is why I succeed.", source: "Michael Jordan" },
+    { text: "Float like a butterfly, sting like a bee.", source: "Muhammad Ali" },
+    { text: "Champions keep playing until they get it right.", source: "Billie Jean King" },
+    { text: "The more I practice, the luckier I get.", source: "Gary Player" },
+    { text: "It's not whether you get knocked down; it's whether you get up.", source: "Vince Lombardi" },
+    { text: "Gold medals aren't really made of gold. They're made of sweat, determination, and a hard-to-find alloy called guts.", source: "Dan Gable" },
+    { text: "You are never really playing an opponent. You are playing yourself.", source: "Arthur Ashe" },
+    { text: "Winning isn't everything, but wanting to win is.", source: "Vince Lombardi" },
+    { text: "Do not let what you cannot do interfere with what you can do.", source: "John Wooden" },
+    { text: "The key is not the will to win… everybody has that. It is the will to prepare to win that is important.", source: "Bobby Knight" },
+    { text: "If you can believe it, the mind can achieve it.", source: "Ronnie Lott" },
+    { text: "Hard work beats talent when talent doesn't work hard.", source: "Tim Notke" },
+    { text: "The difference between the impossible and the possible lies in a man's determination.", source: "Tommy Lasorda" },
+    { text: "Excellence is not a singular act, but a habit. You are what you repeatedly do.", source: "Shaquille O'Neal" },
+    { text: "Somewhere behind the athlete you've become and the hours of practice and the coaches who have pushed you is a little girl who fell in love with the game and never looked back.", source: "Mia Hamm" },
+    { text: "You've got to get to the stage in life where going for it is more important than winning or losing.", source: "Arthur Ashe" },
+    { text: "Pain is temporary. It may last a minute, or an hour, or a day, or a year, but eventually it will subside and something else will take its place.", source: "Lance Armstrong" },
+    { text: "Never give up! Failure and rejection are only the first step to succeeding.", source: "Jim Valvano" },
+    { text: "There may be people that have more talent than you, but there's no excuse for anyone to work harder than you do.", source: "Derek Jeter" },
+    { text: "A champion is defined not by their wins but by how they can recover when they fall.", source: "Serena Williams" },
+    { text: "You have to expect things of yourself before you can do them.", source: "Michael Jordan" },
+    { text: "I'm not out there sweating for three hours every day just to find out what it feels like to sweat.", source: "Michael Jordan" },
+    { text: "If you're afraid to fail, then you're probably going to fail.", source: "Kobe Bryant" },
+    { text: "The most important thing in the Olympic Games is not winning but taking part.", source: "Pierre de Coubertin" },
+    { text: "I hated every minute of training, but I said, don't quit. Suffer now and live the rest of your life as a champion.", source: "Muhammad Ali" },
+    { text: "I am the greatest, I said that even before I knew I was.", source: "Muhammad Ali" },
+    { text: "Impossible is just a big word thrown around by small men.", source: "Muhammad Ali" },
+    { text: "Don't count the days, make the days count.", source: "Muhammad Ali" },
+    { text: "I have nothing to lose but something to gain.", source: "Eminem / Sports motivation" },
+    { text: "Success is where preparation and opportunity meet.", source: "Bobby Unser" }
+  ]},
+];
+
+// ═══════════════════════════════════════════════════
+//  DATE HELPERS
+// ═══════════════════════════════════════════════════
+function getGMTDate() {
+  const now = new Date();
+  const gmtStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  return gmtStr;
+}
+
+function getDateSeed() {
+  const d = getGMTDate();
+  return d.replace(/-/g, '');
+}
+
+function dayOfYear() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 0));
+  const diff = now - start;
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+function seededRandom(seed) {
+  // Simple LCG
+  seed = ((seed * 1664525 + 1013904223) & 0xffffffff) >>> 0;
+  return seed / 0x100000000;
+}
+
+function seedFromDate(dateStr, extra = 0) {
+  let h = 5381 + extra;
+  for (let i = 0; i < dateStr.length; i++) {
+    h = ((h << 5) + h + dateStr.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+// ═══════════════════════════════════════════════════
+//  QUOTE SYSTEM
+// ═══════════════════════════════════════════════════
+function getTodayQuote() {
+  const now = new Date();
+  const month = now.getUTCMonth(); // 0-11
+  const day = now.getUTCDate() - 1; // 0-30
+
+  const theme = MONTHLY_THEMES[month % MONTHLY_THEMES.length];
+  const quotes = theme.quotes;
+  const quote = quotes[day % quotes.length];
+
+  return { theme: theme.theme, ...quote };
+}
+
+// ═══════════════════════════════════════════════════
+//  SUDOKU GENERATOR
+// ═══════════════════════════════════════════════════
+function shuffle(arr, rng) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function makeRng(seed) {
+  let s = seed;
+  return function() {
+    s = ((s * 1664525 + 1013904223) & 0xffffffff) >>> 0;
+    return s / 0x100000000;
+  };
+}
+
+function generateFullGrid(rng) {
+  const grid = Array.from({length: 9}, () => Array(9).fill(0));
+  
+  function isValid(grid, row, col, num) {
+    for (let i = 0; i < 9; i++) {
+      if (grid[row][i] === num) return false;
+      if (grid[i][col] === num) return false;
+    }
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
+    for (let r = boxRow; r < boxRow + 3; r++) {
+      for (let c = boxCol; c < boxCol + 3; c++) {
+        if (grid[r][c] === num) return false;
+      }
+    }
+    return true;
+  }
+  
+  function solve(grid, pos = 0) {
+    if (pos === 81) return true;
+    const row = Math.floor(pos / 9), col = pos % 9;
+    const nums = shuffle([1,2,3,4,5,6,7,8,9], rng);
+    for (const n of nums) {
+      if (isValid(grid, row, col, n)) {
+        grid[row][col] = n;
+        if (solve(grid, pos + 1)) return true;
+        grid[row][col] = 0;
+      }
+    }
+    return false;
+  }
+  
+  solve(grid);
+  return grid;
+}
+
+function createPuzzle(fullGrid, clues, rng) {
+  // Deep copy
+  const puzzle = fullGrid.map(r => [...r]);
+  const positions = shuffle([...Array(81).keys()], rng);
+  let removed = 0;
+  const toRemove = 81 - clues;
+  
+  for (const pos of positions) {
+    if (removed >= toRemove) break;
+    const r = Math.floor(pos / 9), c = pos % 9;
+    const backup = puzzle[r][c];
+    puzzle[r][c] = 0;
+    
+    // Quick uniqueness check (simplified - count solutions up to 2)
+    const solutions = countSolutions(puzzle.map(row => [...row]), 0, 0, 2);
+    if (solutions !== 1) {
+      puzzle[r][c] = backup;
+    } else {
+      removed++;
+    }
+  }
+  
+  return puzzle;
+}
+
+function countSolutions(grid, row, col, limit) {
+  if (row === 9) return 1;
+  const nextRow = col === 8 ? row + 1 : row;
+  const nextCol = col === 8 ? 0 : col + 1;
+  if (grid[row][col] !== 0) return countSolutions(grid, nextRow, nextCol, limit);
+  
+  let count = 0;
+  for (let n = 1; n <= 9; n++) {
+    if (isValidCell(grid, row, col, n)) {
+      grid[row][col] = n;
+      count += countSolutions(grid, nextRow, nextCol, limit);
+      grid[row][col] = 0;
+      if (count >= limit) return count;
+    }
+  }
+  return count;
+}
+
+function isValidCell(grid, row, col, num) {
+  for (let i = 0; i < 9; i++) {
+    if (grid[row][i] === num) return false;
+    if (grid[i][col] === num) return false;
+  }
+  const br = Math.floor(row/3)*3, bc = Math.floor(col/3)*3;
+  for (let r = br; r < br+3; r++)
+    for (let c = bc; c < bc+3; c++)
+      if (grid[r][c] === num) return false;
+  return true;
+}
+
+const CLUE_COUNTS = { easy: 45, medium: 33, hard: 26 };
+
+function getDailyPuzzle(difficulty) {
+  const dateStr = getDateSeed();
+  const diffIdx = {easy:0, medium:100, hard:200}[difficulty];
+  const seed = seedFromDate(dateStr, diffIdx);
+  const rng = makeRng(seed);
+  
+  const fullGrid = generateFullGrid(rng);
+  const puzzle = createPuzzle(fullGrid, CLUE_COUNTS[difficulty], rng);
+  
+  return { puzzle, solution: fullGrid };
+}
+
+// ═══════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════
+let state = {
+  difficulty: 'easy',
+  puzzle: null,
+  solution: null,
+  userGrid: null,
+  selected: null,
+  timer: 0,
+  timerInterval: null,
+  hintsUsed: 0,
+  completed: { easy: false, medium: false, hard: false },
+  quoteUnlocked: false,
+};
+
+// Load progress from localStorage
+function loadProgress() {
+  const today = getGMTDate();
+  const saved = localStorage.getItem('qsudoku_progress');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.date === today) {
+        state.completed = data.completed || { easy: false, medium: false, hard: false };
+        state.quoteUnlocked = Object.values(state.completed).some(Boolean);
+      }
+    } catch(e) {}
+  }
+}
+
+function saveProgress() {
+  const today = getGMTDate();
+  localStorage.setItem('qsudoku_progress', JSON.stringify({
+    date: today,
+    completed: state.completed,
+  }));
+}
+
+// ═══════════════════════════════════════════════════
+//  UI RENDERING
+// ═══════════════════════════════════════════════════
+function renderBoard() {
+  const boardEl = document.getElementById('sudoku-board');
+  boardEl.innerHTML = '';
+  
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      
+      const given = state.puzzle[r][c] !== 0;
+      const user = state.userGrid[r][c];
+      
+      if (given) {
+        cell.classList.add('given');
+        cell.textContent = state.puzzle[r][c];
+      } else if (user !== 0) {
+        cell.classList.add('editable');
+        cell.textContent = user;
+        if (user !== state.solution[r][c]) cell.classList.add('error');
+      }
+      
+      cell.addEventListener('click', () => selectCell(r, c));
+      boardEl.appendChild(cell);
+    }
+  }
+  
+  highlightSelected();
+}
+
+function highlightSelected() {
+  const cells = document.querySelectorAll('.cell');
+  cells.forEach(cell => {
+    cell.classList.remove('selected', 'highlight');
+    const r = parseInt(cell.dataset.row);
+    const c = parseInt(cell.dataset.col);
+    
+    if (state.selected) {
+      const [sr, sc] = state.selected;
+      if (r === sr && c === sc) {
+        cell.classList.add('selected');
+      } else if (r === sr || c === sc || (Math.floor(r/3) === Math.floor(sr/3) && Math.floor(c/3) === Math.floor(sc/3))) {
+        cell.classList.add('highlight');
+      }
+    }
+  });
+}
+
+function selectCell(r, c) {
+  if (state.puzzle[r][c] !== 0) {
+    state.selected = [r, c];
+    highlightSelected();
+    return;
+  }
+  state.selected = [r, c];
+  highlightSelected();
+}
+
+function placeNumber(num) {
+  if (!state.selected) return;
+  const [r, c] = state.selected;
+  if (state.puzzle[r][c] !== 0) return;
+  
+  state.userGrid[r][c] = num;
+  renderBoard();
+  
+  const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+  if (cell) {
+    cell.classList.remove('pop');
+    void cell.offsetWidth;
+    cell.classList.add('pop');
+    if (num !== 0 && num !== state.solution[r][c]) {
+      cell.classList.add('shake');
+      setTimeout(() => cell.classList.remove('shake'), 350);
+    }
+  }
+  
+  checkWin();
+}
+
+function checkWin() {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const val = state.puzzle[r][c] !== 0 ? state.puzzle[r][c] : state.userGrid[r][c];
+      if (val !== state.solution[r][c]) return false;
+    }
+  }
+  
+  // Won!
+  clearInterval(state.timerInterval);
+  state.completed[state.difficulty] = true;
+  state.quoteUnlocked = true;
+  saveProgress();
+  updateProgressUI();
+  updateQuoteUI();
+  
+  setTimeout(() => showWinModal(), 300);
+  launchConfetti();
+  return true;
+}
+
+function showWinModal() {
+  const overlay = document.getElementById('win-overlay');
+  const emojis = { easy: '🌟', medium: '🔥', hard: '🏆' };
+  const labels = { easy: 'Easy Level Complete', medium: 'Medium Level Complete', hard: 'Master Level Complete!' };
+  
+  document.getElementById('win-emoji').textContent = emojis[state.difficulty];
+  document.getElementById('win-title').textContent = 'Puzzle Solved!';
+  document.getElementById('win-subtitle').textContent = labels[state.difficulty];
+  document.getElementById('win-time').textContent = formatTime(state.timer);
+  document.getElementById('win-hints').textContent = state.hintsUsed;
+  
+  const quote = getTodayQuote();
+  document.getElementById('win-quote-theme').textContent = `✦ ${quote.theme}`;
+  document.getElementById('win-quote-text').textContent = `"${quote.text}"`;
+  document.getElementById('win-quote-source').textContent = `— ${quote.source}`;
+  
+  overlay.classList.add('show');
+}
+
+function hideWinModal() {
+  document.getElementById('win-overlay').classList.remove('show');
+}
+
+function launchConfetti() {
+  const colors = ['#c8873a', '#7b5ea7', '#4a9e6f', '#c84a4a', '#f5c842'];
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.cssText = `
+        left: ${Math.random() * 100}vw;
+        top: -20px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        width: ${6 + Math.random() * 10}px;
+        height: ${6 + Math.random() * 10}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        animation-duration: ${2 + Math.random() * 2}s;
+        animation-delay: ${Math.random() * 0.5}s;
+      `;
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 5000);
+    }, i * 20);
+  }
+}
+
+function updateProgressUI() {
+  ['easy', 'medium', 'hard'].forEach(d => {
+    const el = document.getElementById(`prog-${d}`);
+    if (el) el.textContent = state.completed[d] ? '✅' : '○';
+  });
+}
+
+function updateQuoteUI() {
+  if (!state.quoteUnlocked) return;
+  const quote = getTodayQuote();
+  const body = document.getElementById('quote-body');
+  body.innerHTML = `
+    <div class="quote-theme">✦ ${quote.theme}</div>
+    <div class="quote-text">"${quote.text}"</div>
+    <div class="quote-source">— ${quote.source}</div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+//  TIMER
+// ═══════════════════════════════════════════════════
+function formatTime(secs) {
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function startTimer() {
+  clearInterval(state.timerInterval);
+  state.timer = 0;
+  state.timerInterval = setInterval(() => {
+    state.timer++;
+    document.getElementById('timer').textContent = formatTime(state.timer);
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════
+//  COUNTDOWN
+// ═══════════════════════════════════════════════════
+function updateCountdown() {
+  const now = new Date();
+  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const diff = Math.max(0, Math.floor((midnight - now) / 1000));
+  
+  const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+  const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+  const s = String(diff % 60).padStart(2, '0');
+  
+  document.getElementById('countdown').textContent = `${h}:${m}:${s}`;
+}
+
+// ═══════════════════════════════════════════════════
+//  LOAD PUZZLE
+// ═══════════════════════════════════════════════════
+function loadPuzzle(difficulty) {
+  state.difficulty = difficulty;
+  state.selected = null;
+  state.hintsUsed = 0;
+  
+  const { puzzle, solution } = getDailyPuzzle(difficulty);
+  state.puzzle = puzzle;
+  state.solution = solution;
+  state.userGrid = puzzle.map(r => [...r]);
+  
+  // Update UI
+  const diffLabel = document.getElementById('diff-label');
+  diffLabel.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  diffLabel.className = `diff-label ${difficulty}`;
+  
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.diff === difficulty);
+  });
+  
+  renderBoard();
+  startTimer();
+  
+  if (state.completed[difficulty]) {
+    clearInterval(state.timerInterval);
+    document.getElementById('timer').textContent = '✓ Done';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════
+function buildNumpad() {
+  const pad = document.getElementById('numpad');
+  pad.innerHTML = '';
+  for (let i = 1; i <= 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'numpad-btn';
+    btn.textContent = i;
+    btn.addEventListener('click', () => placeNumber(i));
+    pad.appendChild(btn);
+  }
+  const erase = document.createElement('button');
+  erase.className = 'numpad-btn erase';
+  erase.textContent = '✕ Erase';
+  erase.addEventListener('click', () => placeNumber(0));
+  pad.appendChild(erase);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key >= '1' && e.key <= '9') placeNumber(parseInt(e.key));
+  if (e.key === 'Backspace' || e.key === 'Delete') placeNumber(0);
+  if (state.selected) {
+    const [r, c] = state.selected;
+    if (e.key === 'ArrowUp'    && r > 0) selectCell(r-1, c);
+    if (e.key === 'ArrowDown'  && r < 8) selectCell(r+1, c);
+    if (e.key === 'ArrowLeft'  && c > 0) selectCell(r, c-1);
+    if (e.key === 'ArrowRight' && c < 8) selectCell(r, c+1);
+  }
+});
+
+document.getElementById('btn-hint').addEventListener('click', () => {
+  // Find first empty or wrong cell near selected, or random
+  let candidates = [];
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (state.puzzle[r][c] === 0 && state.userGrid[r][c] !== state.solution[r][c])
+        candidates.push([r, c]);
+  
+  if (candidates.length === 0) return;
+  const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+  state.userGrid[r][c] = state.solution[r][c];
+  state.selected = [r, c];
+  state.hintsUsed++;
+  renderBoard();
+  checkWin();
+});
+
+document.getElementById('btn-validate').addEventListener('click', () => {
+  let errors = 0;
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (state.userGrid[r][c] !== 0 && state.userGrid[r][c] !== state.solution[r][c])
+        errors++;
+  
+  if (errors === 0) {
+    let empty = 0;
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++)
+        if (state.puzzle[r][c] === 0 && state.userGrid[r][c] === 0) empty++;
+    alert(empty > 0 ? `✓ No errors so far! ${empty} cells remaining.` : '🎉 Puzzle complete!');
+  } else {
+    alert(`✗ Found ${errors} error${errors > 1 ? 's' : ''}. Keep trying!`);
+  }
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (confirm('Reset the puzzle? Your progress will be lost.')) {
+    state.userGrid = state.puzzle.map(r => [...r]);
+    state.selected = null;
+    renderBoard();
+    startTimer();
+  }
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => loadPuzzle(tab.dataset.diff));
+});
+
+document.getElementById('btn-next-puzzle').addEventListener('click', () => {
+  hideWinModal();
+  const order = ['easy', 'medium', 'hard'];
+  const next = order[(order.indexOf(state.difficulty) + 1) % order.length];
+  if (!state.completed[next]) loadPuzzle(next);
+  else {
+    alert('🏆 All three puzzles completed today! Come back tomorrow for new puzzles.');
+  }
+});
+
+document.getElementById('win-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideWinModal();
+});
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  loadProgress();
+  
+  // Date display
+  const now = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' };
+  document.getElementById('date-str').textContent = now.toLocaleDateString('en-US', options);
+  
+  // Puzzle number = days since launch (Jan 1 2025)
+  const launch = new Date('2025-01-01');
+  const puzzleNum = Math.floor((now - launch) / (1000 * 60 * 60 * 24)) + 1;
+  document.getElementById('puzzle-num').textContent = puzzleNum;
+  
+  buildNumpad();
+  loadPuzzle('easy');
+  updateProgressUI();
+  if (state.quoteUnlocked) updateQuoteUI();
+  
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+init();
+</script>
+</body>
+</html>
