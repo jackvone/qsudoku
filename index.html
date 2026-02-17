@@ -551,7 +551,43 @@ footer {
   letter-spacing: 0.06em;
   border-top: 1px solid var(--line);
 }
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  background: white;
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.feedback-btn:hover {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
 </style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N4B48XM82S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-N4B48XM82S');
+</script>
 </head>
 <body>
 
@@ -668,7 +704,14 @@ footer {
   </div>
 </div>
 
-<footer>QSudoku — Daily Puzzles · Resets at midnight GMT · Made with ♥</footer>
+<footer>
+  <div class="footer-inner">
+    <span>QSudoku — Daily Puzzles · Resets at midnight GMT · Made with ♥</span>
+    <a href="https://forms.gle/YOUR_FORM_ID" target="_blank" rel="noopener" class="feedback-btn">
+      💬 Feedback / Report a Bug
+    </a>
+  </div>
+</footer>
 
 <script>
 // ═══════════════════════════════════════════════════
@@ -1231,11 +1274,51 @@ let state = {
   timerInterval: null,
   hintsUsed: 0,
   checksUsed: 0,
+  errorsRevealed: [],
   completed: { easy: false, medium: false, hard: false },
   quoteUnlocked: false,
 };
 
-// Load progress from localStorage
+// ── FULL STATE PERSISTENCE ──────────────────────────
+// Saves everything per difficulty so users can close and return
+
+function saveProgress() {
+  const today = getGMTDate();
+  // Save global completion flags
+  localStorage.setItem('qsudoku_progress', JSON.stringify({
+    date: today,
+    completed: state.completed,
+  }));
+}
+
+function savePuzzleState() {
+  // Save in-progress state for the current difficulty
+  if (!state.puzzle) return;
+  const today = getGMTDate();
+  const key = `qsudoku_state_${state.difficulty}`;
+  localStorage.setItem(key, JSON.stringify({
+    date: today,
+    userGrid: state.userGrid,
+    timer: state.timer,
+    hintsUsed: state.hintsUsed,
+    checksUsed: state.checksUsed,
+    errorsRevealed: state.errorsRevealed,
+  }));
+}
+
+function loadPuzzleState(difficulty) {
+  // Returns saved in-progress state for a difficulty, or null if none/stale
+  const today = getGMTDate();
+  const key = `qsudoku_state_${difficulty}`;
+  const saved = localStorage.getItem(key);
+  if (!saved) return null;
+  try {
+    const data = JSON.parse(saved);
+    if (data.date !== today) return null; // stale — different day
+    return data;
+  } catch(e) { return null; }
+}
+
 function loadProgress() {
   const today = getGMTDate();
   const saved = localStorage.getItem('qsudoku_progress');
@@ -1248,14 +1331,6 @@ function loadProgress() {
       }
     } catch(e) {}
   }
-}
-
-function saveProgress() {
-  const today = getGMTDate();
-  localStorage.setItem('qsudoku_progress', JSON.stringify({
-    date: today,
-    completed: state.completed,
-  }));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1281,7 +1356,8 @@ function renderBoard() {
       } else if (user !== 0) {
         cell.classList.add('editable');
         cell.textContent = user;
-        if (user !== state.solution[r][c]) cell.classList.add('error');
+        const isRevealed = state.errorsRevealed.some(([er,ec]) => er === r && ec === c && state.userGrid[r][c] !== state.solution[r][c]);
+        if (isRevealed) cell.classList.add('error');
       }
       
       cell.addEventListener('click', () => selectCell(r, c));
@@ -1326,6 +1402,11 @@ function placeNumber(num) {
   if (state.puzzle[r][c] !== 0) return;
   
   state.userGrid[r][c] = num;
+  // If player changed a cell, remove it from errorsRevealed (hide red until next Check)
+  if (num !== 0) {
+    state.errorsRevealed = state.errorsRevealed.filter(([er,ec]) => !(er === r && ec === c));
+  }
+  savePuzzleState();
   renderBoard();
   
   const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
@@ -1450,9 +1531,22 @@ function formatTime(secs) {
 function startTimer() {
   clearInterval(state.timerInterval);
   state.timer = 0;
+  document.getElementById('timer').textContent = formatTime(0);
   state.timerInterval = setInterval(() => {
     state.timer++;
     document.getElementById('timer').textContent = formatTime(state.timer);
+    // Auto-save state every 10 seconds
+    if (state.timer % 10 === 0) savePuzzleState();
+  }, 1000);
+}
+
+function resumeTimer() {
+  clearInterval(state.timerInterval);
+  document.getElementById('timer').textContent = formatTime(state.timer);
+  state.timerInterval = setInterval(() => {
+    state.timer++;
+    document.getElementById('timer').textContent = formatTime(state.timer);
+    if (state.timer % 10 === 0) savePuzzleState();
   }, 1000);
 }
 
@@ -1479,29 +1573,43 @@ function loadPuzzle(difficulty) {
   state.selected = null;
   state.hintsUsed = 0;
   state.checksUsed = 0;
-  
+  state.errorsRevealed = [];
+
   const { puzzle, solution } = getDailyPuzzle(difficulty);
   state.puzzle = puzzle;
   state.solution = solution;
   state.userGrid = puzzle.map(r => [...r]);
-  
+
+  // Restore saved in-progress state if available
+  const saved = loadPuzzleState(difficulty);
+  if (saved && !state.completed[difficulty]) {
+    state.userGrid = saved.userGrid;
+    state.hintsUsed = saved.hintsUsed || 0;
+    state.checksUsed = saved.checksUsed || 0;
+    state.errorsRevealed = saved.errorsRevealed || [];
+    state.timer = saved.timer || 0;
+  } else {
+    state.timer = 0;
+  }
+
   // Update UI
   const diffLabel = document.getElementById('diff-label');
   diffLabel.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
   diffLabel.className = `diff-label ${difficulty}`;
-  
+
   document.querySelectorAll('.tab').forEach(t => {
     t.classList.toggle('active', t.dataset.diff === difficulty);
   });
-  
+
   renderBoard();
-  startTimer();
   updateHintButton();
   updateCheckButton();
-  
+
   if (state.completed[difficulty]) {
     clearInterval(state.timerInterval);
     document.getElementById('timer').textContent = '✓ Done';
+  } else {
+    resumeTimer();
   }
 }
 
@@ -1568,6 +1676,7 @@ document.getElementById('btn-hint').addEventListener('click', () => {
   state.selected = [r, c];
   state.hintsUsed++;
   updateHintButton();
+  savePuzzleState();
   renderBoard();
   checkWin();
 });
@@ -1592,29 +1701,49 @@ document.getElementById('btn-validate').addEventListener('click', () => {
   if (state.checksUsed >= MAX_CHECKS) return;
   state.checksUsed++;
   updateCheckButton();
+  savePuzzleState();
 
   let errors = 0;
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
-      if (state.userGrid[r][c] !== 0 && state.userGrid[r][c] !== state.solution[r][c])
+      if (state.userGrid[r][c] !== 0 && state.userGrid[r][c] !== state.solution[r][c]) {
         errors++;
+        // Mark this cell as revealed so it shows red
+        if (!state.errorsRevealed.some(([er,ec]) => er === r && ec === c)) {
+          state.errorsRevealed.push([r, c]);
+        }
+      }
+
+  // Clear revealed flag for cells the player already fixed
+  state.errorsRevealed = state.errorsRevealed.filter(([er,ec]) => 
+    state.userGrid[er][ec] !== state.solution[er][ec]
+  );
+
+  renderBoard();
 
   if (errors === 0) {
     let empty = 0;
     for (let r = 0; r < 9; r++)
       for (let c = 0; c < 9; c++)
         if (state.puzzle[r][c] === 0 && state.userGrid[r][c] === 0) empty++;
-    alert(empty > 0 ? `✓ No errors so far! ${empty} cells remaining.` : '🎉 Puzzle complete!');
+    alert(empty > 0 ? `✓ No errors! ${empty} cells remaining.` : '🎉 Puzzle complete!');
   } else {
-    alert(`✗ Found ${errors} error${errors > 1 ? 's' : ''}. Keep trying!`);
+    const checksLeft = MAX_CHECKS - state.checksUsed;
+    alert(`✗ Found ${errors} error${errors > 1 ? 's' : ''} — marked in red. ${checksLeft > 0 ? checksLeft + ' check' + (checksLeft > 1 ? 's' : '') + ' remaining.' : 'No more checks \u2014 you are on your own now!'}`);
   }
 });
 
 document.getElementById('btn-reset').addEventListener('click', () => {
   if (confirm('Reset the puzzle? Your progress will be lost.')) {
     state.userGrid = state.puzzle.map(r => [...r]);
+    state.errorsRevealed = [];
+    state.hintsUsed = 0;
+    state.checksUsed = 0;
     state.selected = null;
+    localStorage.removeItem(`qsudoku_state_${state.difficulty}`);
     renderBoard();
+    updateHintButton();
+    updateCheckButton();
     startTimer();
   }
 });
