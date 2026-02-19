@@ -205,13 +205,15 @@ header {
   align-items: center;
 }
 .diff-label {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 2.2rem;
-  letter-spacing: 0.08em;
+  width: 48px;
+  height: 6px;
+  border-radius: 3px;
+  display: block;
 }
-.diff-label.easy   { color: var(--easy); }
-.diff-label.medium { color: var(--medium); }
-.diff-label.hard   { color: var(--hard); }
+.diff-label.easy   { background: var(--easy);   box-shadow: 0 0 10px rgba(26,158,111,0.5); }
+.diff-label.medium { background: var(--medium); box-shadow: 0 0 10px rgba(212,130,10,0.5); }
+.diff-label.hard   { background: var(--hard);   box-shadow: 0 0 10px rgba(212,42,42,0.5); }
+.diff-label.expert { background: #a855f7;       box-shadow: 0 0 10px rgba(168,85,247,0.5); }
 
 .timer {
   font-family: 'Space Mono', monospace;
@@ -583,6 +585,216 @@ footer {
   transform: translate(2px,2px);
 }
 
+/* EXPERT TAB */
+.tab-expert {
+  background: linear-gradient(135deg, #1a0030, #2d0050) !important;
+  color: #c084fc !important;
+  border-color: #6d28d9 !important;
+  position: relative;
+}
+.tab-expert::after {
+  content: '🔓';
+  font-size: 0.7rem;
+  position: absolute;
+  top: 4px; right: 6px;
+}
+.tab-expert.active {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  color: white !important;
+  border-color: #7c3aed !important;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.5) !important;
+}
+
+/* MILESTONE OVERLAY */
+.milestone-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,5,20,0.88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1002;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+  backdrop-filter: blur(10px);
+}
+.milestone-overlay.show { opacity: 1; pointer-events: all; }
+
+.milestone-modal {
+  background: var(--bg);
+  border: 3px solid #7c3aed;
+  border-radius: 20px;
+  padding: 2.5rem 2rem 2rem;
+  max-width: 420px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 10px 10px 0 #7c3aed, 0 0 80px rgba(124,58,237,0.4);
+  transform: translateY(40px) scale(0.93);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+.milestone-overlay.show .milestone-modal { transform: translateY(0) scale(1); }
+
+.ms-badge {
+  font-size: 3.8rem;
+  margin-bottom: 0.3rem;
+  display: block;
+  animation: badgeBounce 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes badgeBounce {
+  from { transform: scale(0) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);  opacity: 1; }
+}
+
+.ms-days {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5rem;
+  line-height: 1;
+  color: #7c3aed;
+  text-shadow: 4px 4px 0 rgba(124,58,237,0.2);
+  animation: countUp 0.4s 0.5s ease both;
+}
+@keyframes countUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.ms-modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.ms-modal-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+
+.ms-reward-box {
+  background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(168,85,247,0.04));
+  border: 2px solid rgba(124,58,237,0.2);
+  border-radius: var(--r);
+  padding: 1.2rem 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.ms-reward-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a855f7;
+  margin-bottom: 0.4rem;
+}
+.ms-reward-desc { color: var(--text); margin-bottom: 0.6rem; }
+.ms-deal-code {
+  display: inline-block;
+  background: #7c3aed;
+  color: white;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  margin-top: 0.2rem;
+}
+.ms-deal-code:hover { background: #6d28d9; transform: scale(1.03); }
+.ms-deal-code.copied { background: var(--easy); }
+
+.ms-close-btn {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  border-color: var(--text) !important;
+  box-shadow: 3px 3px 0 rgba(124,58,237,0.3) !important;
+  width: 100%;
+}
+
+/* ABOUT MODAL */
+.about-overlay {
+  position: fixed; inset: 0;
+  background: rgba(28,23,16,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1003;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+}
+.about-overlay.show { opacity: 1; pointer-events: all; }
+.about-modal {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 460px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 6px 6px 0 var(--text);
+  position: relative;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.3s ease;
+}
+.about-overlay.show .about-modal { transform: translateY(0) scale(1); }
+.about-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: var(--surface2); border: none; border-radius: 50%;
+  width: 32px; height: 32px; font-size: 0.8rem;
+  cursor: pointer; color: var(--muted); font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.about-close:hover { background: var(--text); color: var(--bg); }
+.about-logo {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 2.5rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+.about-logo .q { color: var(--accent); }
+.about-logo .s { color: var(--accent2); }
+.about-tagline {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.about-section { margin-bottom: 1.2rem; }
+.about-section-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+.about-section p { font-size: 0.85rem; line-height: 1.7; color: var(--text); }
+.about-section p strong { color: var(--accent2); }
+.about-footer {
+  font-family: "Space Mono", monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.08em;
+}
+
 /* MOBILE */
 @media (max-width: 820px) {
   .main { grid-template-columns: 1fr; padding: 0 1rem 3rem; gap: 1.5rem; }
@@ -635,12 +847,13 @@ footer {
   <button class="tab active" data-diff="easy">Easy</button>
   <button class="tab" data-diff="medium">Medium</button>
   <button class="tab" data-diff="hard">Hard</button>
+  <button class="tab tab-expert" data-diff="expert" id="tab-expert" style="display:none">⚡ Expert</button>
 </div>
 
 <div class="main">
   <div class="board-wrap">
     <div class="board-header">
-      <div class="diff-label easy" id="diff-label">Easy</div>
+      <div class="diff-label easy" id="diff-label"></div>
       <div class="timer" id="timer">00:00</div>
     </div>
     <div id="sudoku-board"></div>
@@ -671,6 +884,10 @@ footer {
         <div class="progress-item">
           <span><span class="progress-dot dot-hard"></span>Hard</span>
           <span class="checkmark" id="prog-hard">○</span>
+        </div>
+        <div class="progress-item" id="prog-expert-row" style="display:none">
+          <span><span class="progress-dot dot-expert"></span>⚡ Expert</span>
+          <span class="checkmark" id="prog-expert">○</span>
         </div>
       </div>
     </div>
@@ -707,6 +924,19 @@ footer {
   </div>
 </div>
 
+<!-- Milestone Overlay -->
+<div class="milestone-overlay" id="milestone-overlay">
+  <div class="milestone-modal">
+    <div class="ms-fireworks" id="ms-fireworks"></div>
+    <div class="ms-badge" id="ms-badge">🏅</div>
+    <div class="ms-days" id="ms-days">10</div>
+    <div class="ms-modal-title">DAY STREAK!</div>
+    <div class="ms-modal-sub" id="ms-modal-sub">You unlocked a reward</div>
+    <div class="ms-reward-box" id="ms-reward-box"></div>
+    <button class="btn ms-close-btn" id="btn-close-milestone">Awesome, let's keep going! →</button>
+  </div>
+</div>
+
 <!-- Win Overlay -->
 <div class="win-overlay" id="win-overlay">
   <div class="win-modal">
@@ -732,12 +962,39 @@ footer {
   </div>
 </div>
 
+<!-- About Modal -->
+<div class="about-overlay" id="about-overlay">
+  <div class="about-modal">
+    <button class="about-close" id="about-close">✕</button>
+    <div class="about-logo"><span class="q">Q</span><span class="s">S</span>UDOKU</div>
+    <div class="about-tagline">A free daily Sudoku puzzle — three difficulties, one new set every day at GMT midnight.</div>
+    <div class="about-section">
+      <div class="about-section-title">How to Play</div>
+      <p>Fill the 9×9 grid so every row, column and 3×3 box contains the digits 1–9. Each daily puzzle has exactly one solution.</p>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">Features</div>
+      <p>Three difficulties daily — Easy, Medium and Hard. Reach a <strong>10 day streak</strong> to unlock the secret ⚡ Expert mode. Use hints and checks wisely — you only get 3 of each per puzzle.</p>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">Streaks & Rewards</div>
+      <p>Complete at least one puzzle per day to build your streak. Hit <strong>10, 20 or 50 days</strong> to unlock special rewards and exclusive deals.</p>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">About</div>
+      <p>QSudoku is a passion project — built to give puzzle lovers a clean, distraction-free daily challenge. New puzzles every day, forever.</p>
+    </div>
+    <div class="about-footer">qsudoku.co.uk · Made with ♥</div>
+  </div>
+</div>
+
 <footer>
   <div class="footer-inner">
     <span>QSudoku — Daily Puzzles · Resets at midnight GMT · Made with ♥</span>
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSeoKR1L0ydq6VmGP80PPRtEKlTVc9pk-BAe8jOYswBZ9kd3wg/viewform?usp=publish-editor" target="_blank" rel="noopener" class="feedback-btn">
       💬 Feedback / Report a Bug
     </a>
+    <button class="feedback-btn" id="btn-about">ℹ️ About</button>
   </div>
 </footer>
 
@@ -1139,11 +1396,18 @@ function seededRandom(seed) {
 }
 
 function seedFromDate(dateStr, extra = 0) {
-  let h = 5381 + extra;
-  for (let i = 0; i < dateStr.length; i++) {
-    h = ((h << 5) + h + dateStr.charCodeAt(i)) | 0;
+  // Strong hash — consecutive dates produce completely different seeds
+  // Uses a mix of multiply, XOR and bit rotation (FNV-inspired)
+  const str = dateStr + '|' + extra + '|qsudoku2025';
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
   }
-  return Math.abs(h);
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1275,11 +1539,11 @@ function isValidCell(grid, row, col, num) {
   return true;
 }
 
-const CLUE_COUNTS = { easy: 45, medium: 33, hard: 26 };
+const CLUE_COUNTS = { easy: 45, medium: 33, hard: 26, expert: 20 };
 
 function getDailyPuzzle(difficulty) {
   const dateStr = getDateSeed();
-  const diffIdx = {easy:0, medium:100, hard:200}[difficulty];
+  const diffIdx = {easy:0, medium:100, hard:200, expert:300}[difficulty];
   const seed = seedFromDate(dateStr, diffIdx);
   const rng = makeRng(seed);
   
@@ -1303,7 +1567,7 @@ let state = {
   hintsUsed: 0,
   checksUsed: 0,
   errorsRevealed: [],
-  completed: { easy: false, medium: false, hard: false },
+  completed: { easy: false, medium: false, hard: false, expert: false },
   quoteUnlocked: false,
 };
 
@@ -1316,14 +1580,47 @@ function saveProgress() {
     date: today,
     completed: state.completed,
   }));
-  if (Object.values(state.completed).some(Boolean)) updateStreak();
 }
+
+// ── MILESTONE DEFINITIONS ───────────────────────────
+const MILESTONES = {
+  10: {
+    emoji: '⚡',
+    title: 'Expert Unlocked',
+    sub: 'You reached a 10 day streak!',
+    reward: 'You have unlocked the <strong>Expert</strong> difficulty — only 20 clues, no mercy.',
+    deal: null, // replace with your affiliate code when ready
+    dealLabel: null,
+    dealDesc: null,
+  },
+  20: {
+    emoji: '🥈',
+    title: '20 Day Legend',
+    sub: 'You reached a 20 day streak!',
+    reward: 'You are in the top tier of QSudoku players. Here is an exclusive discount as a thank you:',
+    deal: 'QSUDOKU20',
+    dealLabel: '20% OFF — Partner Deal',
+    dealDesc: 'Use code at checkout for 20% off your next order at our partner store.',
+  },
+  50: {
+    emoji: '👑',
+    title: 'Sudoku Royalty',
+    sub: 'You reached a 50 day streak!',
+    reward: 'You are officially a QSudoku legend. This VIP code is reserved for players like you:',
+    deal: 'QVIP50',
+    dealLabel: 'VIP 50% OFF — Exclusive',
+    dealDesc: 'Exclusive VIP discount. Use at our partner store for 50% off — your reward for dedication.',
+  },
+};
 
 function updateStreak() {
   const today = getGMTDate();
-  let streak = { count: 0, lastDate: '' };
+  let streak = { count: 0, lastDate: '', milestonesShown: [] };
   try { streak = JSON.parse(localStorage.getItem('qsudoku_streak') || '{}'); } catch(e) {}
+  streak.milestonesShown = streak.milestonesShown || [];
+
   if (streak.lastDate === today) { displayStreak(streak.count || 0); return; }
+
   const yesterday = new Date();
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const yStr = yesterday.toISOString().slice(0, 10);
@@ -1331,6 +1628,14 @@ function updateStreak() {
   streak.lastDate = today;
   localStorage.setItem('qsudoku_streak', JSON.stringify(streak));
   displayStreak(streak.count);
+
+  // Check if we just hit a milestone for the first time
+  const milestoneDay = [10, 20, 50].find(m => streak.count === m && !streak.milestonesShown.includes(m));
+  if (milestoneDay) {
+    streak.milestonesShown.push(milestoneDay);
+    localStorage.setItem('qsudoku_streak', JSON.stringify(streak));
+    setTimeout(() => showMilestone(milestoneDay), 800);
+  }
 }
 
 function displayStreak(count) {
@@ -1339,6 +1644,84 @@ function displayStreak(count) {
   if (!badge || !num) return;
   num.textContent = count;
   badge.classList.toggle('zero', count === 0);
+  // Show expert tab if streak >= 10
+  if (count >= 10) unlockExpert();
+}
+
+function unlockExpert() {
+  const tab = document.getElementById('tab-expert');
+  if (tab) tab.style.display = '';
+}
+
+function showMilestone(days) {
+  const m = MILESTONES[days];
+  if (!m) return;
+
+  document.getElementById('ms-badge').textContent = m.emoji;
+  document.getElementById('ms-days').textContent = days;
+  document.getElementById('ms-modal-sub').textContent = m.sub;
+
+  // Build reward box
+  let html = `<div class="ms-reward-title">🎁 Your Reward</div>
+    <div class="ms-reward-desc">${m.reward}</div>`;
+
+  if (m.deal) {
+    html += `
+      <div class="ms-reward-title" style="margin-top:0.8rem">${m.dealLabel}</div>
+      <div class="ms-reward-desc" style="font-size:0.8rem;color:var(--muted)">${m.dealDesc}</div>
+      <button class="ms-deal-code" id="ms-copy-btn" onclick="copyDealCode('${m.deal}', this)">
+        ${m.deal} — tap to copy
+      </button>`;
+  }
+
+  if (days === 10) {
+    html += `<div class="ms-reward-desc" style="margin-top:0.8rem;font-size:0.78rem;color:var(--muted)">
+      The ⚡ Expert tab is now visible in your puzzle tabs. Only 20 clues — good luck!
+    </div>`;
+  }
+
+  document.getElementById('ms-reward-box').innerHTML = html;
+
+  // Launch big fireworks
+  launchMilestoneFireworks();
+
+  const overlay = document.getElementById('milestone-overlay');
+  overlay.classList.add('show');
+}
+
+function copyDealCode(code, btn) {
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = code + ' — tap to copy';
+      btn.classList.remove('copied');
+    }, 2500);
+  }).catch(() => {
+    btn.textContent = code; // fallback — show plain code
+  });
+}
+
+function launchMilestoneFireworks() {
+  const colors = ['#7c3aed','#a855f7','#e8460a','#00c896','#ffb300','#ff3d6b','#00e5ff'];
+  for (let i = 0; i < 120; i++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      const size = Math.random() * 10 + 5;
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        left:${Math.random()*100}vw;
+        top:-20px;
+        border-radius:${Math.random()>0.5?'50%':'2px'};
+        animation-duration:${Math.random()*2+2}s;
+        animation-delay:${Math.random()*1.5}s;
+      `;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 4000);
+    }, i * 20);
+  }
 }
 
 function savePuzzleState() {
@@ -1486,6 +1869,7 @@ function checkWin() {
   state.completed[state.difficulty] = true;
   state.quoteUnlocked = true;
   saveProgress();
+  updateStreak();
   updateProgressUI();
   updateQuoteUI();
   
@@ -1540,10 +1924,18 @@ function launchConfetti() {
 }
 
 function updateProgressUI() {
-  ['easy', 'medium', 'hard'].forEach(d => {
+  ['easy','medium','hard','expert'].forEach(d => {
     const el = document.getElementById(`prog-${d}`);
-    if (el) el.textContent = state.completed[d] ? '✅' : '○';
+    if (el) el.textContent = state.completed[d] ? '✓' : '○';
   });
+  // Show expert row if streak unlocked
+  const expertRow = document.getElementById('prog-expert-row');
+  if (expertRow) {
+    try {
+      const s = JSON.parse(localStorage.getItem('qsudoku_streak') || '{}');
+      if ((s.count || 0) >= 10) expertRow.style.display = '';
+    } catch(e) {}
+  }
 }
 
 function updateQuoteUI() {
@@ -1644,7 +2036,7 @@ function loadPuzzle(difficulty) {
 
   // Update UI
   const diffLabel = document.getElementById('diff-label');
-  diffLabel.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  diffLabel.textContent = ''; // text removed, colour shown via class
   diffLabel.className = `diff-label ${difficulty}`;
 
   document.querySelectorAll('.tab').forEach(t => {
@@ -1804,16 +2196,38 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 document.getElementById('btn-next-puzzle').addEventListener('click', () => {
   hideWinModal();
-  const order = ['easy', 'medium', 'hard'];
+  const streakData = JSON.parse(localStorage.getItem('qsudoku_streak') || '{}');
+  const expertUnlocked = (streakData.count || 0) >= 10;
+  const order = expertUnlocked ? ['easy', 'medium', 'hard', 'expert'] : ['easy', 'medium', 'hard'];
   const next = order[(order.indexOf(state.difficulty) + 1) % order.length];
   if (!state.completed[next]) loadPuzzle(next);
-  else {
-    alert('🏆 All three puzzles completed today! Come back tomorrow for new puzzles.');
-  }
+  else alert('All puzzles completed today! Come back tomorrow.');
 });
 
 document.getElementById('win-overlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) hideWinModal();
+});
+
+document.getElementById('btn-close-milestone').addEventListener('click', () => {
+  document.getElementById('milestone-overlay').classList.remove('show');
+});
+
+document.getElementById('milestone-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('milestone-overlay').classList.remove('show');
+  }
+});
+
+// About modal
+document.getElementById('btn-about').addEventListener('click', () => {
+  document.getElementById('about-overlay').classList.add('show');
+});
+document.getElementById('about-close').addEventListener('click', () => {
+  document.getElementById('about-overlay').classList.remove('show');
+});
+document.getElementById('about-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget)
+    document.getElementById('about-overlay').classList.remove('show');
 });
 
 // ═══════════════════════════════════════════════════
@@ -1832,10 +2246,18 @@ function init() {
   const puzzleNum = Math.floor((now - launch) / (1000 * 60 * 60 * 24)) + 1;
   document.getElementById('puzzle-num').textContent = puzzleNum;
 
-  // Load streak display
+  // Load streak display — only show if played today or yesterday
+  // Also unlock Expert if streak >= 10
   try {
     const s = JSON.parse(localStorage.getItem('qsudoku_streak') || '{}');
-    displayStreak(s.count || 0);
+    const today = getGMTDate();
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const yStr = yesterday.toISOString().slice(0, 10);
+    const isActive = s.lastDate === today || s.lastDate === yStr;
+    const count = isActive ? (s.count || 0) : 0;
+    displayStreak(count);
+    if (count >= 10) unlockExpert();
   } catch(e) { displayStreak(0); }
 
   buildNumpad();
