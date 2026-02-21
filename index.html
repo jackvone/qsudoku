@@ -6,7 +6,7 @@
 <title>QSudoku — Daily Puzzle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #f7f3ec;
@@ -29,7 +29,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -57,7 +57,7 @@ body::after {
   background: var(--text);
   padding: 0.55rem 2rem;
   text-align: center;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.68rem;
   color: rgba(255,255,255,0.5);
   letter-spacing: 0.12em;
@@ -93,7 +93,7 @@ header {
 .logo::after {
   content: 'DAILY PUZZLE';
   display: block;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.52rem;
   letter-spacing: 0.3em;
   color: var(--muted);
@@ -108,7 +108,7 @@ header {
 }
 
 .date-display {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.68rem;
   color: var(--muted);
   text-align: right;
@@ -119,7 +119,7 @@ header {
   color: var(--text);
   font-size: 0.85rem;
   font-weight: 600;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
 }
 
 /* STREAK BADGE */
@@ -129,7 +129,7 @@ header {
   gap: 0.35rem;
   background: linear-gradient(135deg, var(--accent), #ff8a00);
   color: white;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.3rem 0.8rem;
@@ -164,7 +164,7 @@ header {
   padding: 0.85rem 1rem;
   border: 2px solid var(--border);
   background: var(--surface);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -216,7 +216,7 @@ header {
 .diff-label.expert { background: #a855f7;       box-shadow: 0 0 10px rgba(168,85,247,0.5); }
 
 .timer {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--muted);
@@ -244,7 +244,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Lato', sans-serif;
   font-size: clamp(0.85rem, 2.2vw, 1.2rem);
   font-weight: 700;
   border: 1px solid rgba(30,20,10,0.08);
@@ -257,10 +257,11 @@ header {
 .cell[data-col="2"], .cell[data-col="5"] { border-right: 2.5px solid rgba(30,20,10,0.3); }
 .cell[data-row="2"], .cell[data-row="5"] { border-bottom: 2.5px solid rgba(30,20,10,0.3); }
 
-.cell.given    { color: var(--text); font-weight: 800; cursor: default; }
-.cell.editable { color: var(--accent2); }
-.cell.selected { background: rgba(108,59,255,0.1); }
-.cell.highlight{ background: rgba(108,59,255,0.04); }
+.cell.given    { color: #2a5298; font-weight: 700; cursor: default; }
+.cell.editable { color: #4a7fc1; font-weight: 700; }
+.cell.selected { background: rgba(65,105,225,0.18); }
+.cell.highlight{ background: transparent; }
+.cell.cross    { background: rgba(180,160,220,0.28); }
 .cell.error    { color: var(--hard) !important; }
 
 /* NUMPAD */
@@ -280,7 +281,7 @@ header {
   border: 2px solid var(--border);
   background: var(--surface);
   border-radius: var(--r);
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -289,7 +290,7 @@ header {
   box-shadow: 3px 3px 0 var(--border);
 }
 .numpad-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); box-shadow: 3px 3px 0 rgba(30,20,10,0.3); }
-.numpad-btn.erase { font-size: 0.7rem; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
+.numpad-btn.erase { font-size: 0.7rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; font-weight: 600; }
 .numpad-btn.erase:hover { background: var(--hard); border-color: var(--hard); color: white; box-shadow: 3px 3px 0 rgba(212,42,42,0.3); }
 
 /* ACTIONS */
@@ -306,7 +307,7 @@ header {
   background: var(--surface);
   color: var(--text);
   border-radius: var(--r);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
@@ -318,7 +319,7 @@ header {
 .btn:hover { background: var(--text); color: var(--bg); box-shadow: 1px 1px 0 var(--text); transform: translate(2px,2px); }
 .btn.outline { background: transparent; }
 .btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; box-shadow: none; }
-#hint-count, #check-count { font-family: 'Space Mono', monospace; font-size: 0.68rem; opacity: 0.55; }
+#hint-count, #check-count { font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; opacity: 0.55; }
 
 /* SIDEBAR */
 .sidebar {
@@ -344,7 +345,7 @@ header {
   background: var(--surface2);
 }
 .card-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -384,7 +385,7 @@ header {
 .quote-card .card-head { background: rgba(108,59,255,0.06); border-color: rgba(108,59,255,0.15); }
 .quote-card .card-title { color: var(--accent2); }
 .quote-theme {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -393,7 +394,7 @@ header {
   display: block;
 }
 .quote-text {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.92rem;
   font-style: italic;
   font-weight: 500;
@@ -402,7 +403,7 @@ header {
   margin-bottom: 0.6rem;
 }
 .quote-source {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.62rem;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -472,7 +473,7 @@ header {
   font-size: 0.72rem;
   color: var(--muted);
   margin-bottom: 1.5rem;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -504,7 +505,7 @@ header {
   color: var(--muted);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
 }
 
 /* ANIMATIONS */
@@ -547,7 +548,7 @@ header {
 footer {
   text-align: center;
   padding: 2rem;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.65rem;
   color: var(--muted);
   letter-spacing: 0.06em;
@@ -570,7 +571,7 @@ footer {
   border-radius: 20px;
   background: var(--surface);
   color: var(--text);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.72rem;
   font-weight: 600;
   text-decoration: none;
@@ -666,7 +667,7 @@ footer {
 }
 
 .ms-modal-sub {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.68rem;
   color: var(--muted);
   letter-spacing: 0.12em;
@@ -685,7 +686,7 @@ footer {
   line-height: 1.6;
 }
 .ms-reward-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -698,7 +699,7 @@ footer {
   display: inline-block;
   background: #7c3aed;
   color: white;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
   font-size: 0.85rem;
   font-weight: 700;
   padding: 0.35rem 0.9rem;
@@ -1804,7 +1805,7 @@ function renderBoard() {
 function highlightSelected() {
   const cells = document.querySelectorAll('.cell');
   cells.forEach(cell => {
-    cell.classList.remove('selected', 'highlight');
+    cell.classList.remove('selected', 'highlight', 'cross');
     const r = parseInt(cell.dataset.row);
     const c = parseInt(cell.dataset.col);
     
@@ -1812,7 +1813,9 @@ function highlightSelected() {
       const [sr, sc] = state.selected;
       if (r === sr && c === sc) {
         cell.classList.add('selected');
-      } else if (r === sr || c === sc || (Math.floor(r/3) === Math.floor(sr/3) && Math.floor(c/3) === Math.floor(sc/3))) {
+      } else if (r === sr || c === sc) {
+        cell.classList.add('cross');
+      } else if (Math.floor(r/3) === Math.floor(sr/3) && Math.floor(c/3) === Math.floor(sc/3)) {
         cell.classList.add('highlight');
       }
     }
