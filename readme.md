@@ -11,11 +11,7 @@ A daily Sudoku puzzle site with three difficulty levels, motivational quotes, an
 
 ## Deploy to Netlify
 
-### Option A — Drag & Drop
-1. Zip this folder.
-2. Go to [app.netlify.com](https://app.netlify.com) → "Add new site" → "Deploy manually".
-3. Drag the zip file onto the upload area.
-4. Add your custom domain in Site Settings → Domain Management.
+### Option A — 
 
 ### Option B — GitHub (recommended for updates)
 1. Push this folder to a GitHub repository.
